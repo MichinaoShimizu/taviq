@@ -260,3 +260,33 @@ func TestDoctorUsesMachineHookAndMarker(t *testing.T) {
 		t.Fatalf("expected machine-level core ready: %+v", x)
 	}
 }
+\n
+func TestMachineInstallOwnsIntegrationAdapters(t *testing.T) {
+	config := t.TempDir()
+	home := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", config)
+	t.Setenv("HOME", home)
+
+	if err := machineInstall(); err != nil {
+		t.Fatal(err)
+	}
+	dir, err := integrationsDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"claude", "codex", "kiro"} {
+		b, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(b), "taviq observe "+name+" agent") {
+			t.Fatalf("unexpected %s adapter: %s", name, b)
+		}
+	}
+	if err := machineUninstall(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Fatal("integration adapter directory must be removed")
+	}
+}
