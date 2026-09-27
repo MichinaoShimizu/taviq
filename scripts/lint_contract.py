@@ -62,4 +62,9 @@ if errors:
     print("Taviq contract lint failed:")
     for e in errors: print(" -",e)
     raise SystemExit(1)
+for p in (ROOT/"cmd").rglob("*.go"):
+    for lineno,line in enumerate(p.read_text().splitlines(),1):
+        if line == r"\n":
+            fail(p.relative_to(ROOT),f"line {lineno}: standalone literal \\n corruption")
+
 print("Taviq contract lint passed.")

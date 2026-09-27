@@ -184,3 +184,43 @@ func TestMachineInstallUninstallIsIdempotent(t *testing.T) {
 		t.Fatal("expected Taviq config directory removed")
 	}
 }
+func TestRepositoryMarkerLifecycle(t *testing.T) {
+	dir := enterRepo(t)
+	enabled, err := repoEnabled()
+	if err != nil || enabled {
+		t.Fatalf("expected disabled repo: %v %v", enabled, err)
+	}
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	enabled, err = repoEnabled()
+	if err != nil || !enabled {
+		t.Fatalf("expected enabled repo: %v %v", enabled, err)
+	}
+	b, _ := os.ReadFile(filepath.Join(dir, repoMarker))
+	if string(b) != "version: 1\n" {
+		t.Fatalf("unexpected marker: %q", b)
+	}
+	if err := deinitMarker(); err != nil {
+		t.Fatal(err)
+	}
+	enabled, err = repoEnabled()
+	if err != nil || enabled {
+		t.Fatalf("expected disabled repo after deinit: %v %v", enabled, err)
+	}
+}
+
+func TestRepositoryMarkerFailsClosedOnUnknownVersion(t *testing.T) {
+	dir := enterRepo(t)
+	_ = os.WriteFile(filepath.Join(dir, repoMarker), []byte("version: 2\n"), 0o644)
+	enabled, err := repoEnabled()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if enabled {
+		t.Fatal("unknown marker version must not enable repository")
+	}
+}
