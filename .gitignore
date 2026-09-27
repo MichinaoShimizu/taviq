@@ -2,3 +2,4 @@
 .taviq/outbox/
 .taviq/sessions/
 .taviq/events/
+dist/

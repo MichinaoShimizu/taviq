@@ -27,8 +27,8 @@ Taviq = **AI Engineering Provenance Layer**.
 
 ## v0.2 — Organization-ready provenance
 
-- [ ] global Taviq CLI: install once per developer machine
-- [ ] `taviq init / deinit / doctor` repository UX
+- [x] global Taviq CLI: install once per developer machine
+- [x] `taviq init / deinit / doctor` repository UX
 - [ ] organization policy schema
 - [ ] repository opt-in / policy discovery
 - [ ] GitHub reusable workflow for centralized PR aggregation
@@ -108,34 +108,39 @@ KPI設計・Delivery/Quality/ROIの読み方はKPI Playbook側の責務として
 - [x] binary-only init / hook / doctor / deinit acceptance
 - [x] cross-build macOS/Linux/Windows
 - [x] Python removed from Core runtime
-- [ ] stable release artifact/version command
-- [ ] checksum/signing strategy for binary releases
+- [x] stable release artifact/version command
+- [x] SHA-256 checksums for binary releases
+- [ ] binary signing strategy
 
 ### Phase B — Machine-level install
-- [ ] define `taviq install / uninstall` machine lifecycle
-- [ ] machine config location and schema
-- [ ] reversible global Git integration
-- [ ] preserve existing global Git configuration
+- [x] define `taviq install / uninstall` machine lifecycle
+- [x] machine config location
+- [ ] machine config schema
+- [x] reversible global Git integration
+- [x] preserve existing global Git configuration
 - [ ] upgrade path for installed binary/config
 - [ ] Homebrew distribution
 - [ ] Windows installation path
 - [ ] Linux installation path
 
 ### Phase C — Repository implementation zero
-- [ ] define minimal `.taviq.yml` marker schema
-- [ ] make `taviq init` marker-only
-- [ ] make `taviq deinit` marker-only
-- [ ] global Git integration ignores non-enabled repositories
-- [ ] remove repository-local hook files
-- [ ] doctor validates marker + machine integration
+- [x] define minimal `.taviq.yml` marker schema
+- [x] make `taviq init` marker-only
+- [x] make `taviq deinit` marker-only
+- [x] global Git integration ignores non-enabled repositories
+- [x] remove repository-local hook files
+- [x] doctor validates marker + machine integration
 
 ### Phase D — Machine-level AI integrations
-- [ ] Claude global integration
-- [ ] Codex global integration
-- [ ] Kiro global integration
-- [ ] integrations call `taviq observe`
-- [ ] preserve existing user tool configuration
-- [ ] safe uninstall of only Taviq-owned configuration
+- [x] Claude machine-owned adapter (`taviq-claude`)
+- [ ] Claude tool configuration wiring
+- [x] Codex machine-owned adapter (`taviq-codex`)
+- [ ] Codex tool configuration wiring
+- [x] Kiro machine-owned adapter (`taviq-kiro`)
+- [ ] Kiro tool configuration wiring
+- [x] integrations call `taviq observe`
+- [x] preserve existing user tool configuration
+- [x] safe uninstall of only Taviq-owned configuration
 
 ### Phase E — Organization policy
 - [ ] organization policy schema

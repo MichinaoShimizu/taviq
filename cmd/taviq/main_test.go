@@ -447,3 +447,29 @@ func TestDoctorReportsRepositoryHooksPathOverride(t *testing.T) {
 		t.Fatalf("repository hooksPath bypasses the machine hook: %+v", x)
 	}
 }
+
+func TestVersionPrefersStampedRelease(t *testing.T) {
+	old := version
+	t.Cleanup(func() { version = old })
+	version = ""
+	if got := taviqVersion(); got == "" {
+		t.Fatal("unstamped build must still report a version")
+	}
+	version = "v0.1.0"
+	if got := taviqVersion(); got != "v0.1.0" {
+		t.Fatalf("got %q, want stamped v0.1.0", got)
+	}
+}
+
+func TestDoctorReportsVersion(t *testing.T) {
+	enterRepo(t)
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	x, err := diagnose()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if x["version"] != taviqVersion() {
+		t.Fatalf("doctor version = %v, want %q", x["version"], taviqVersion())
+	}
+}

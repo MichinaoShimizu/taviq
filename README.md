@@ -40,6 +40,7 @@ GitHub等のPR集約はOptional integrationです。
 go build -o taviq ./cmd/taviq
 install -m 0755 ./taviq ~/.local/bin/taviq
 taviq install
+taviq version
 ```
 
 Repositoryを有効化（`.taviq.yml` markerのみ作成）:
@@ -87,6 +88,7 @@ Commit provenanceには低機密な最小metadataだけを残します。
 - [Provenance Schema](docs/provenance-schema.md)
 - [Trust Model](docs/verified-provenance.md)
 - [Target Architecture](docs/target-architecture.md)
+- [Release Artifacts](docs/release.md)
 - [Architecture Decisions](docs/adr/README.md)
 - [Roadmap](docs/ROADMAP.md)
 
