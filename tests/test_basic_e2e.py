@@ -18,6 +18,16 @@ class BasicE2ETests(unittest.TestCase):
         self.assertEqual(r["tools"],{"claude":2,"codex":1})
         self.assertEqual(r["multi_tool_commits"],1)
 
+    def test_squash_merge_unions_blocks_in_body(self):
+        body=("Feature (#1)\n\n* One\n\nprose\nTaviq-Tools: kiro\n\n"
+              "Co-Authored-By: X <x@example.com>\nTaviq-Provenance: v1\nTaviq-Tools: claude\nTaviq-Models: m1\n\n"
+              "* Two\n\nTaviq-Provenance: v1\nTaviq-Tools: codex\nTaviq-Modes: agent\n\n"
+              "---------\n\nCo-authored-by: X <x@example.com>\n")
+        self.assertEqual(M.parse(body),{"version":"v1","tools":["claude","codex"],"models":["m1"],"modes":["agent"]})
+
+    def test_prose_mention_is_not_provenance(self):
+        self.assertEqual(M.parse("Docs\n\nThe hook writes\nTaviq-Provenance: v1\n"),{})
+
     def test_model_is_optional(self):
         r=M.summarize([{"commit":"a","version":"v1","tools":["kiro"],"modes":["agent"],"status":"recorded"}])
         self.assertEqual(r["models"],{})

@@ -462,6 +462,9 @@ func hook(message string) error {
 	if !enabled {
 		return nil
 	}
+	if done, err := consolidateBlocks(message); done || err != nil {
+		return err
+	}
 	path, err := runtimePath()
 	if err != nil {
 		return err
@@ -478,27 +481,82 @@ func hook(message string) error {
 	if len(p.Tools) == 0 {
 		return nil
 	}
-	// Only the trailer block counts: comment lines and a verbose diff below the
-	// scissors line may mention Taviq-Provenance without the commit carrying it.
-	existing, err := exec.Command("git", "interpret-trailers", "--parse", message).Output()
+	return appendTrailers(message, p.trailers())
+}
+
+// consolidateBlocks handles a message that already carries provenance, such as
+// an amend, a squash or a fixup. Its blocks are merged into one trailer block
+// and runtime is not added: the message's own evidence decides. It reports
+// whether the message carried provenance.
+func consolidateBlocks(message string) (bool, error) {
+	data, err := os.ReadFile(message)
 	if err != nil {
-		return err
+		return false, err
 	}
-	for _, line := range strings.Split(string(existing), "\n") {
-		if strings.HasPrefix(line, "Taviq-Provenance:") {
-			return nil
+	if !strings.Contains(string(data), "Taviq-") {
+		return false, nil
+	}
+	lines := strings.Split(string(data), "\n")
+	comment := commentPrefix()
+	// A verbose diff below the scissors line is not part of the message.
+	body := lines
+	for i, line := range lines {
+		if line == comment+" ------------------------ >8 ------------------------" {
+			body = lines[:i]
+			break
 		}
 	}
-	trailers := []string{"Taviq-Provenance: v1", "Taviq-Tools: " + strings.Join(p.Tools, ",")}
-	if len(p.Modes) > 0 {
-		trailers = append(trailers, "Taviq-Modes: "+strings.Join(p.Modes, ","))
+	blocks := provenanceBlocks(body, comment)
+	if len(blocks) == 0 {
+		return false, nil
 	}
-	if len(p.Models) > 0 {
-		trailers = append(trailers, "Taviq-Models: "+strings.Join(p.Models, ","))
+	if len(blocks) == 1 {
+		// Only the trailer block counts as already in place.
+		existing, err := exec.Command("git", "interpret-trailers", "--parse", message).Output()
+		if err != nil {
+			return true, err
+		}
+		for _, line := range strings.Split(string(existing), "\n") {
+			if strings.HasPrefix(line, "Taviq-Provenance:") {
+				return true, nil
+			}
+		}
 	}
-	if len(p.Agents) > 0 {
-		trailers = append(trailers, "Taviq-Agents: "+strings.Join(p.Agents, ","))
+	p, ok := mergeBlocks(blocks)
+	if !ok || len(p.Tools) == 0 {
+		// Leave provenance Taviq cannot merge as the author wrote it.
+		return true, nil
 	}
+	drop := map[int]bool{}
+	for _, b := range blocks {
+		for _, i := range b.Index {
+			drop[i] = true
+		}
+	}
+	kept := []string{}
+	for i, line := range lines {
+		if !drop[i] {
+			kept = append(kept, line)
+		}
+	}
+	if err := os.WriteFile(message, []byte(strings.Join(kept, "\n")), 0o644); err != nil {
+		return true, err
+	}
+	return true, appendTrailers(message, p.trailers())
+}
+
+// commentPrefix is the comment character Git strips from commit messages.
+func commentPrefix() string {
+	for _, key := range []string{"core.commentString", "core.commentChar"} {
+		out, _ := exec.Command("git", "config", "--get", key).Output()
+		if c := strings.TrimRight(string(out), "\n"); c != "" && c != "auto" {
+			return c
+		}
+	}
+	return "#"
+}
+
+func appendTrailers(message string, trailers []string) error {
 	// Explicit placement overrides any trailer.* settings in user Git config.
 	args := []string{"interpret-trailers", "--in-place", "--where", "end", "--if-exists", "add", "--if-missing", "add"}
 	for _, t := range trailers {

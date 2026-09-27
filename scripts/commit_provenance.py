@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, json, subprocess
+import argparse, json, re, subprocess
 from pathlib import Path
 
 KEYS={"Taviq-Provenance":"version","Taviq-Tools":"tools","Taviq-Modes":"modes","Taviq-Models":"models","Taviq-Agents":"agents"}
@@ -7,24 +7,47 @@ KEYS={"Taviq-Provenance":"version","Taviq-Tools":"tools","Taviq-Modes":"modes","
 def split_values(value):
     return sorted(set(v.strip() for v in (value or "").split(",") if v.strip()))
 
+TRAILER=re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]*:( |$)")
+LEGACY={"Taviq-Tool":"tools","Taviq-Mode":"modes","Taviq-Model":"models"}
+
+def blocks(body):
+    """Provenance blocks: paragraphs whose lines are all trailers and include a Taviq field.
+
+    Squash merges leave each commit's trailer paragraph in the body, so blocks are
+    read from the whole message, not only the final trailer paragraph.
+    """
+    out=[]
+    for para in re.split(r"\n\s*\n",body):
+        lines=[l.strip() for l in para.splitlines() if l.strip()]
+        if lines and all(TRAILER.match(l) for l in lines):
+            fields=[l for l in lines if l.split(":",1)[0] in KEYS or l.split(":",1)[0] in LEGACY]
+            if fields: out.append(fields)
+    return out
+
+def parse(body):
+    found={}
+    for block in blocks(body):
+        legacy={}
+        for line in block:
+            prefix,raw=line.split(":",1)
+            raw=raw.strip()
+            if prefix in KEYS:
+                key=KEYS[prefix]
+                if key=="version": found.setdefault("version",raw)
+                else: found[key]=sorted(set(found.get(key,[]))|set(split_values(raw)))
+            else:
+                legacy.setdefault(LEGACY[prefix],[raw])
+        # Backward-compatible legacy single-value trailers.
+        for key,values in legacy.items():
+            if key not in found: found[key]=values
+    return found
+
 def trailers(repo,base,head):
     shas=subprocess.check_output(["git","-C",str(repo),"rev-list",f"{base}..{head}"],text=True).split()
     rows=[]
     for sha in shas:
         body=subprocess.check_output(["git","-C",str(repo),"show","-s","--format=%B",sha],text=True)
-        found={}
-        for line in body.splitlines():
-            for prefix,key in KEYS.items():
-                mark=prefix+":"
-                if line.startswith(mark):
-                    raw=line[len(mark):].strip()
-                    found[key]=split_values(raw) if key in ("tools","modes","models","agents") else raw
-        # Backward-compatible legacy single-value trailers.
-        legacy={"Taviq-Tool":"tools","Taviq-Mode":"modes","Taviq-Model":"models"}
-        for line in body.splitlines():
-            for prefix,key in legacy.items():
-                mark=prefix+":"
-                if line.startswith(mark) and key not in found: found[key]=[line[len(mark):].strip()]
+        found=parse(body)
         rows.append({"commit":sha,**found,"status":"recorded" if found.get("version") and found.get("tools") else "unknown"})
     return rows
 
