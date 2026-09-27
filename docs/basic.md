@@ -15,10 +15,10 @@ AI coding tool
 ## Install in a repository
 
 ```bash
-python3 scripts/install_basic.py
+python3 scripts/install_basic.py install
 ```
 
-This configures the repository-local Git hook path to `.taviq/hooks`.
+This configures the repository-local Git hook path to `.taviq/hooks` and remembers the previous `core.hooksPath` so it can be restored.\n\nUninstall:\n\n```bash\npython3 scripts/install_basic.py uninstall\n```
 
 ## AI execution metadata
 
