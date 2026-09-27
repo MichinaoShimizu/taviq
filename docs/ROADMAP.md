@@ -31,7 +31,7 @@ Taviq = **AI Engineering Provenance Layer**.
 - [ ] commit trailer validation
 - [ ] tool / mode taxonomyを安定化
 - [ ] provenance coverage semanticsを固定
-- [x] signed / verifiable provenance threat model\n- [x] HMAC-SHA256 MVP integrity primitive\n- [x] Basic trailer signing integration\n- [x] GitHub Actions verification status\n- [x] HMAC key setup / rotation / compromise handling\n- [ ] asymmetric / supply-chain attestation design
+- [x] provenance spoofing / trust model\n- [x] BasicはZero-secret / Recorded-or-Unknownに固定\n- [x] 独自HMAC/signing systemを採用しない\n- [ ] 標準的なsupply-chain attestation/signing方式を必要性から評価
 - [x] spoofing / tampering threat model
 - [ ] monorepo / worktree / squash merge対応
 - [ ] merge commit / rebase対応
