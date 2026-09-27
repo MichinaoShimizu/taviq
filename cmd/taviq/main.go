@@ -60,6 +60,49 @@ func machineUninstall() error {
 	return os.Remove(dir)
 }
 
+
+const repoMarker = ".taviq.yml"
+
+func repoEnabled() (bool, error) {
+	r, err := root()
+	if err != nil {
+		return false, err
+	}
+	b, err := os.ReadFile(filepath.Join(r, repoMarker))
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(b)) == "version: 1", nil
+}
+
+func initMarker() error {
+	r, err := root()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(r, repoMarker)
+	if b, err := os.ReadFile(path); err == nil {
+		if strings.TrimSpace(string(b)) == "version: 1" {
+			return nil
+		}
+		return fmt.Errorf("%s already exists with unsupported content", repoMarker)
+	}
+	return os.WriteFile(path, []byte("version: 1\n"), 0o644)
+}
+
+func deinitMarker() error {
+	r, err := root()
+	if err != nil {
+		return err
+	}
+	_ = os.Remove(filepath.Join(r, repoMarker))
+	_ = os.Remove(filepath.Join(r, ".taviq", "runtime.json"))
+	return nil
+}
+
 func root() (string, error) {
 	b, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
 	if err != nil {
