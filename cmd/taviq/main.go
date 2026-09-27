@@ -252,7 +252,16 @@ func main() {
 		fmt.Println("usage: taviq <install|uninstall|init|deinit|doctor|observe|hook>")
 		return
 	}
+
 	switch os.Args[1] {
+	case "install":
+		if err := machineInstall(); err != nil {
+			fail(err)
+		}
+	case "uninstall":
+		if err := machineUninstall(); err != nil && !os.IsNotExist(err) {
+			fail(err)
+		}
 	case "init":
 		if err := initRepo(); err != nil {
 			fail(err)
