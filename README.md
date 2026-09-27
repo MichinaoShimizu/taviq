@@ -51,7 +51,7 @@ GitHub Actions
 Pull Request
 
 AI provenance coverage  80%
-Confirmed               4 / 5 commits
+Recorded                4 / 5 commits
 Unknown                 1 commit
 Tools                   Claude, Codex
 ```
@@ -158,7 +158,7 @@ Taviq単体:
 - Agent等のmodeを識別
 - provenance coverageを把握
 - AI関与を確認できない変更をUnknownとして把握
-- 将来の監査・ガバナンス・分析に使えるJoin Keyを作る
+- 将来の分析や運用ポリシーと結び付けられるJoin Keyを作る
 
 他データと組み合わせる場合:
 
@@ -183,7 +183,7 @@ Taviq Provenance + Cost         → 投資分析の入力
 
 Taviqは当面、**AI Engineering Provenance Layer** に集中します。
 
-過去に作成したDelivery / ROI / executive reportingの実験コードやサンプルは、Provenanceの将来的な利用可能性を検証したものです。今後の新規開発優先度はProvenance Basicの正確性、対応ツール、導入容易性、privacy、overhead、監査可能性を最優先とします。
+過去に作成したDelivery / ROI / Collector / Relay等の実験は、Provenanceの利用可能性を検証したものです。現行Basicの仕様ではありません。今後の新規開発優先度はProvenance Basicの正確性、対応ツール、導入容易性、privacy、overhead、監査可能性を最優先とします。
 
 ## Historical / experimental code
 
