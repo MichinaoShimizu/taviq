@@ -180,6 +180,19 @@ Taviq Provenance + Cost         → 投資分析の入力
 - [Provenance Trust Model](docs/verified-provenance.md) — Recorded / Unknownと信頼境界
 - [Implementation Roadmap](docs/ROADMAP.md) — 現在地と今後の計画\n- [Architecture Decisions](docs/adr/README.md) — 変更時に守る設計判断\n- [Development Skill](.agents/skills/taviq-development/SKILL.md) — AI Agent / contributor向け開発チェック
 
+## 開発時のチェック
+
+変更前に [Architecture Decisions](docs/adr/README.md) と [Development Skill](.agents/skills/taviq-development/SKILL.md) を確認してください。
+
+PR前のローカルチェック:
+
+```bash
+python3 scripts/lint_contract.py
+python3 -m compileall -q scripts tests
+python3 -m unittest discover -s tests -p 'test_*.py'
+python3 scripts/benchmark_basic.py
+```
+
 ## 現在の方針
 
 Taviqは **AI Engineering Provenance Layer** に集中します。
