@@ -13,15 +13,15 @@ class CliTests(unittest.TestCase):
     def test_install_doctor_uninstall_command_contract(self):
         with tempfile.TemporaryDirectory() as d:
             r=self.repo(d)
-            x=self.run("install","--repo",r); self.assertEqual(x.returncode,0,x.stderr)
+            x=self.run("init","--repo",r); self.assertEqual(x.returncode,0,x.stderr)
             # This external test repo intentionally lacks Taviq scripts, so doctor must report incomplete.
             x=self.run("doctor","--repo",r,"--json"); self.assertNotEqual(x.returncode,0)
             self.assertIn('"core_ready": false',x.stdout)
-            x=self.run("uninstall","--repo",r); self.assertEqual(x.returncode,0,x.stderr)
+            x=self.run("deinit","--repo",r); self.assertEqual(x.returncode,0,x.stderr)
 
     def test_help_exposes_stable_commands(self):
         x=self.run("--help")
         self.assertEqual(x.returncode,0)
-        for command in ("install","uninstall","doctor"): self.assertIn(command,x.stdout)
+        for command in ("init","deinit","install","uninstall","doctor"): self.assertIn(command,x.stdout)
 
 if __name__=="__main__": unittest.main()
