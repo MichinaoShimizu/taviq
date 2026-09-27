@@ -59,7 +59,6 @@ func TestDoctorCoreDoesNotRequireGitHubActions(t *testing.T) {
 	checks:=x["checks"].(map[string]bool)
 	if checks["github_pr_summary"]{t.Fatal("GitHub Actions must remain optional")}
 }
-\n
 func TestObserveAccumulatesOnSameHeadAndResetsOnNewHead(t *testing.T) {
 	dir:=t.TempDir()
 	if err:=exec.Command("git","init",dir).Run();err!=nil{t.Fatal(err)}
@@ -84,7 +83,6 @@ func TestObserveAccumulatesOnSameHeadAndResetsOnNewHead(t *testing.T) {
 	if strings.Join(x.Tools,",")!="kiro"{t.Fatalf("expected reset tools, got %v",x.Tools)}
 	if strings.Join(x.Modes,",")!="crew"{t.Fatalf("expected crew mode, got %v",x.Modes)}
 }
-\n
 func TestObserveThenHookEndToEnd(t *testing.T) {
 	dir:=t.TempDir()
 	if err:=exec.Command("git","init",dir).Run();err!=nil{t.Fatal(err)}
