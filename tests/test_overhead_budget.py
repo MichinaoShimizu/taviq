@@ -18,6 +18,6 @@ class OverheadBudgetTests(unittest.TestCase):
             p=Path(d)/"msg"; p.write_text("Offline commit\n")
             r=M.apply(p,{"TAVIQ_TOOL":"kiro","TAVIQ_MODE":"agent"})
             self.assertTrue(r["applied"])
-            self.assertIn("Taviq-Tool: kiro",p.read_text())
+            self.assertIn("Taviq-Tools: kiro",p.read_text())
 
 if __name__=="__main__": unittest.main()

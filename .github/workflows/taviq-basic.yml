@@ -23,11 +23,13 @@ jobs:
           print('# Taviq AI Provenance')
           print()
           print(f'**Commit provenance coverage:** {cov}')
-          print(f'**Confirmed:** {r["confirmed"]} / {r["commits"]} commits')
+          print(f'**Recorded:** {r["recorded"]} / {r["commits"]} commits')
           print(f'**Unknown:** {r["unknown"]} commits')
-          if r['tools']: print('**Tools:** '+', '.join(r['tools']))
-          if r['modes']: print('**Modes:** '+', '.join(r['modes']))
-          if r['models']: print('**Models:** '+', '.join(r['models']))
+          if r['tools']: print('**Tools:** '+', '.join(f'{k} ({v})' for k,v in r['tools'].items()))
+          if r['modes']: print('**Modes:** '+', '.join(f'{k} ({v})' for k,v in r['modes'].items()))
+          if r['models']:
+              print('**Models:** '+', '.join(f'{k} ({v})' for k,v in r['models'].items()))
+          print(f'**Multi-tool commits:** {r["multi_tool_commits"]}')
           print()
           print('Unknown commits are not classified as human-only.')
           PY
