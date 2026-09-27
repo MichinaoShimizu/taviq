@@ -69,6 +69,80 @@ def html_report(title,since,until,cur,prev,rows,ai=None,compare=None):
         a,n,cov,missing=compare; covs="n/a" if cov is None else f"{cov:.1f}%"
         cmp_html=f'<section><h2>AI-involved vs non-AI changes</h2><p class="meta">Provenance coverage: {covs}; unrecorded: {missing}. Observational, not causal.</p><table><tr><th>Condition</th><th>PRs</th><th>Cycle</th><th>Review</th><th>Size</th></tr><tr><td>AI involved</td><td>{a["pr_count"]}</td><td>{fmt(a["cycle"],"h")}</td><td>{fmt(a["review"],"h")}</td><td>{fmt(a["size"])}</td></tr><tr><td>No AI recorded</td><td>{n["pr_count"]}</td><td>{fmt(n["cycle"],"h")}</td><td>{fmt(n["review"],"h")}</td><td>{fmt(n["size"])}</td></tr></table></section>'
     row_html="".join(f'<tr><td>{html.escape(name)}</td><td>{m["pr_count"]}</td><td>{fmt(m["cycle"],"h")}</td><td>{fmt(m["review"],"h")}</td><td>{fmt(m["size"])}</td></tr>' for name,m in rows)
+    flow_html='<div class="flow"><div><span>INVEST</span><strong>Engineering</strong></div><b>→</b><div><span>UNLOCK</span><strong>Capacity</strong></div><b>→</b><div><span>SHIP</span><strong>Delivery</strong></div><b>→</b><div><span>PROTECT</span><strong>Quality</strong></div><b>→</b><div><span>CREATE</span><strong>Business value</strong></div></div>'
+    return f'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>{html.escape(title)}</title><style>
+:root{{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:#080b10;color:#f5f7fa;--panel:#10151d;--line:#27303b;--muted:#8e9baa;--accent:#d7ff64}}*{{box-sizing:border-box}}body{{max-width:1180px;margin:auto;padding:56px 32px;background:radial-gradient(circle at 80% 0%,#18221d 0,transparent 32%)}}.brand{{display:inline-flex;align-items:center;gap:10px;letter-spacing:.2em;font-weight:900;font-size:.85rem}}.brand:before{{content:"";width:10px;height:10px;border-radius:3px;background:var(--accent);box-shadow:0 0 24px var(--accent)}}h1{{font-size:clamp(2.4rem,6vw,4.8rem);line-height:.95;letter-spacing:-.06em;max-width:850px;margin:20px 0 14px}}h2{{font-size:1.45rem;letter-spacing:-.025em;margin:8px 0 18px}}.meta,small,.eyebrow{{color:var(--muted)}}.eyebrow{{font-size:.72rem;letter-spacing:.16em}}section{{margin-top:52px}}.executive{{padding:28px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#151b24,var(--panel));box-shadow:0 24px 80px rgba(0,0,0,.22)}}.exec-grid,.cards{{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:22px}}.exec-grid{{grid-template-columns:1fr 1fr 2fr}}.exec-grid>div,.card{{padding:20px;background:#0b1016;border:1px solid #202833;border-radius:14px}}.exec-grid span,.exec-grid small,.card span,.card small,.decision span{{display:block;color:var(--muted)}}.exec-grid strong{{display:block;margin:8px 0;font-size:1.1rem}}.card strong{{display:block;font-size:clamp(1.55rem,3vw,2.4rem);letter-spacing:-.04em;margin:10px 0}}.decision{{margin-top:18px;padding:18px 20px;border-left:4px solid var(--accent);background:#0b1016;border-radius:0 12px 12px 0}}.decision strong{{display:block;margin-top:8px}}.flow{{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1fr;align-items:center;gap:10px;margin:30px 0 8px}}.flow div{{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}}.flow span{{display:block;color:var(--muted);font-size:.65rem;letter-spacing:.12em}}.flow strong{{display:block;margin-top:6px}}.flow b{{color:var(--accent)}}table{{width:100%;border-collapse:separate;border-spacing:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}}th,td{{padding:14px 16px;text-align:left;border-bottom:1px solid var(--line)}}th{{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:#0c1117}}tr:last-child td{{border-bottom:0}}.guard{{border:1px solid var(--line);border-left:4px solid var(--accent);padding:18px 22px;background:var(--panel);border-radius:0 14px 14px 0}}@media(max-width:760px){{body{{padding:32px 18px}}.cards,.exec-grid,.flow{{grid-template-columns:1fr}}.flow b{{display:none}}table{{display:block;overflow-x:auto}}}}@media print{{:root{{color-scheme:light;background:white;color:black}}body{{padding:10mm;background:white}}}}
+</style></head><body><div class="brand">TAVIQ</div><h1>{html.escape(title)}</h1><div class="meta">Engineering Intelligence · {since.date()} – {until.date()}</div>{flow_html}{executive_html}<section><div class="eyebrow">ENGINEERING LEADERS</div><h2>Delivery system signals</h2><div class="cards">{cards_html}</div></section>{ai_html}{cmp_html}<section><div class="eyebrow">DIAGNOSTIC DETAIL</div><h2>Repository breakdown</h2><table><tr><th>Repository</th><th>PRs</th><th>Cycle</th><th>Review</th><th>Size</th></tr>{row_html}</table></section><section class="guard"><strong>Interpretation</strong><p>Use these metrics to inspect the delivery system, not to rank individuals. Changes are signals to investigate, not proof of cause.</p></section></body></html>'''/usr/bin/env python3
+from __future__ import annotations
+import argparse, html, json, statistics
+from datetime import datetime, timezone
+from pathlib import Path
+
+def time(v):
+    return datetime.fromisoformat(v.replace("Z","+00:00")) if v else None
+
+def hours(a,b):
+    a,b=time(a),time(b)
+    return (b-a).total_seconds()/3600 if a and b else None
+
+def first_review(pr):
+    xs=[x.get("submittedAt") for x in pr.get("reviews",[]) if x.get("submittedAt")]
+    return min(xs) if xs else None
+
+def med(xs): return statistics.median(xs) if xs else None
+def fmt(v,s=""): return "n/a" if v is None else f"{v:.1f}{s}"
+def change(a,b):
+    return "n/a" if a is None or b in (None,0) else f"{(a-b)/b*100:+.1f}%"
+
+def summarize(prs):
+    cycle=[v for p in prs if p.get("mergedAt") and (v:=hours(p.get("createdAt"),p.get("mergedAt"))) is not None]
+    review=[v for p in prs if (v:=hours(p.get("createdAt"),first_review(p))) is not None]
+    size=[float(p.get("additions",0)+p.get("deletions",0)) for p in prs if isinstance(p.get("additions",0),(int,float)) and isinstance(p.get("deletions",0),(int,float))]
+    return {"pr_count":len(prs),"merged_count":sum(bool(p.get("mergedAt")) for p in prs),"cycle":med(cycle),"review":med(review),"size":med(size),"over24":sum(v>24 for v in review)/len(review)*100 if review else None}
+
+def periods(prs,since,until):
+    span=until-since
+    cur=[p for p in prs if (t:=time(p.get("createdAt"))) and since<=t<until]
+    prev=[p for p in prs if (t:=time(p.get("createdAt"))) and since-span<=t<since]
+    return cur,prev
+
+def ai_roi(x):
+    cost=float(x.get("seats",0))*float(x.get("license_cost",0))+float(x.get("other_cost",0))
+    value=float(x.get("net_hours_saved",0))*float(x.get("loaded_hourly_cost",0))
+    return {"cost":cost,"value":value,"net":value-cost,"roi":(value-cost)/cost*100 if cost else None}
+
+def ai_compare(prs):
+    a=[p for p in prs if p.get("aiProvenance")=="ai"]
+    n=[p for p in prs if p.get("aiProvenance")=="none"]
+    missing=len(prs)-len(a)-len(n)
+    return summarize(a),summarize(n),((len(a)+len(n))/len(prs)*100 if prs else None),missing
+
+def executive_view(cur,prev,ai=None):
+    delivery = change(cur["cycle"], prev["cycle"])
+    quality = "Not connected"
+    ai_view = "Not provided"
+    decision = "Investigate the largest delivery-system change before changing targets."
+    if ai:
+        r=ai_roi(ai)
+        roi="n/a" if r["roi"] is None else f'{r["roi"]:.1f}%'
+        ai_view=f'¥{r["cost"]:,.0f} cost → ¥{r["value"]:,.0f} estimated capacity value · ROI {roi}'
+        decision="Validate where released AI capacity was redeployed and whether quality guardrails stayed stable."
+    return {"delivery":delivery,"quality":quality,"ai":ai_view,"decision":decision}
+
+def html_report(title,since,until,cur,prev,rows,ai=None,compare=None):
+    ex=executive_view(cur,prev,ai)
+    executive_html=f'''<section class="executive"><div class="eyebrow">EXECUTIVE ENGINEERING REVIEW</div><h2>Investment → Capacity → Delivery → Quality → Business</h2><div class="exec-grid"><div><span>Delivery speed</span><strong>{ex["delivery"]}</strong><small>merge-cycle change</small></div><div><span>Quality guardrail</span><strong>{ex["quality"]}</strong><small>connect CFR / defects next</small></div><div><span>AI investment value</span><strong>{html.escape(ex["ai"])}</strong><small>capacity estimate, not cash profit</small></div></div><div class="decision"><span>DECISION / QUESTION</span><strong>{html.escape(ex["decision"])}</strong></div></section>'''
+    cards=[("PRs",str(cur["pr_count"]),change(cur["pr_count"],prev["pr_count"])),("Cycle",fmt(cur["cycle"],"h"),change(cur["cycle"],prev["cycle"])),("First review",fmt(cur["review"],"h"),change(cur["review"],prev["review"])),(">24h review",fmt(cur["over24"],"%"),change(cur["over24"],prev["over24"]))]
+    cards_html="".join(f'<div class="card"><span>{html.escape(k)}</span><strong>{html.escape(v)}</strong><small>{html.escape(d)} vs previous</small></div>' for k,v,d in cards)
+    ai_html=""
+    if ai:
+        r=ai_roi(ai); roi="n/a" if r["roi"] is None else f'{r["roi"]:.1f}%'
+        ai_html=f'<section><h2>Generative AI value & ROI</h2><div class="cards"><div class="card"><span>Net time saved</span><strong>{float(ai.get("net_hours_saved",0)):.1f}h</strong></div><div class="card"><span>Capacity value</span><strong>¥{r["value"]:,.0f}</strong></div><div class="card"><span>Program cost</span><strong>¥{r["cost"]:,.0f}</strong></div><div class="card"><span>Estimated ROI</span><strong>{roi}</strong></div></div><p class="meta">Capacity-value estimate, not booked cash profit. Include prompting, checking and rework in net time saved.</p></section>'
+    cmp_html=""
+    if compare:
+        a,n,cov,missing=compare; covs="n/a" if cov is None else f"{cov:.1f}%"
+        cmp_html=f'<section><h2>AI-involved vs non-AI changes</h2><p class="meta">Provenance coverage: {covs}; unrecorded: {missing}. Observational, not causal.</p><table><tr><th>Condition</th><th>PRs</th><th>Cycle</th><th>Review</th><th>Size</th></tr><tr><td>AI involved</td><td>{a["pr_count"]}</td><td>{fmt(a["cycle"],"h")}</td><td>{fmt(a["review"],"h")}</td><td>{fmt(a["size"])}</td></tr><tr><td>No AI recorded</td><td>{n["pr_count"]}</td><td>{fmt(n["cycle"],"h")}</td><td>{fmt(n["review"],"h")}</td><td>{fmt(n["size"])}</td></tr></table></section>'
+    row_html="".join(f'<tr><td>{html.escape(name)}</td><td>{m["pr_count"]}</td><td>{fmt(m["cycle"],"h")}</td><td>{fmt(m["review"],"h")}</td><td>{fmt(m["size"])}</td></tr>' for name,m in rows)
     return f'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>{html.escape(title)}</title><style>:root{{color-scheme:dark;font-family:system-ui;background:#0d1117;color:#f0f4f8}}body{{max-width:1100px;margin:auto;padding:48px 28px}}.brand{{letter-spacing:.18em;font-weight:800}}.meta,small{{color:#9aa7b4}}.cards{{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:28px 0}}.card{{border:1px solid #303842;border-radius:14px;padding:18px;background:#121820}}.card span,.card small{{display:block}}.card strong{{display:block;font-size:2rem;margin:8px 0}}section{{margin-top:40px}}table{{width:100%;border-collapse:collapse}}th,td{{padding:12px;text-align:left;border-bottom:1px solid #303842}}.guard{{border-left:4px solid #8b98a5;padding:14px 18px;background:#121820}}@media(max-width:760px){{.cards{{grid-template-columns:1fr 1fr}}}}@media print{{:root{{color-scheme:light;background:white;color:black}}body{{padding:10mm}}}}</style></head><body><div class="brand">TAVIQ</div><h1>{html.escape(title)}</h1><div class="meta">Engineering Intelligence · {since.date()} – {until.date()}</div>{executive_html}<section><div class="eyebrow">ENGINEERING LEADERS</div><h2>Delivery system signals</h2><div class="cards">{cards_html}</div></section>{ai_html}{cmp_html}<section><div class="eyebrow">DIAGNOSTIC DETAIL</div><h2>Repository breakdown</h2><table><tr><th>Repository</th><th>PRs</th><th>Cycle</th><th>Review</th><th>Size</th></tr>{row_html}</table></section><section class="guard"><strong>Interpretation</strong><p>Use these metrics to inspect the delivery system, not to rank individuals. Changes are signals to investigate, not proof of cause.</p></section></body></html>'''
 
 def main():
