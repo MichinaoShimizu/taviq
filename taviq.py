@@ -37,6 +37,17 @@ def ai_roi(x):
     value=float(x.get("net_hours_saved",0))*float(x.get("loaded_hourly_cost",0))
     return {"cost":cost,"value":value,"net":value-cost,"roi":(value-cost)/cost*100 if cost else None}
 
+def ai_roi_scenarios(x):
+    base = ai_roi(x)
+    hours = float(x.get("net_hours_saved", 0))
+    rate = float(x.get("loaded_hourly_cost", 0))
+    cost = base["cost"]
+    def scenario(mult):
+        value = hours * mult * rate
+        return {"hours": hours * mult, "value": value, "roi": (value - cost) / cost * 100 if cost else None}
+    break_even_hours = cost / rate if rate else None
+    return {"conservative": scenario(0.6), "base": scenario(1.0), "upside": scenario(1.4), "break_even_hours": break_even_hours}
+
 def ai_compare(prs):
     a=[p for p in prs if p.get("aiProvenance")=="ai"]
     n=[p for p in prs if p.get("aiProvenance")=="none"]
@@ -138,8 +149,9 @@ def html_report(title,since,until,cur,prev,rows,ai=None,compare=None):
     cards_html="".join(f'<div class="card"><span>{html.escape(k)}</span><strong>{html.escape(v)}</strong><small>{html.escape(d)} vs previous</small></div>' for k,v,d in cards)
     ai_html=""
     if ai:
-        r=ai_roi(ai); roi="n/a" if r["roi"] is None else f'{r["roi"]:.1f}%'
-        ai_html=f'<section><h2>生成AIの価値・ROI</h2><div class="cards"><div class="card"><span>正味削減時間</span><strong>{float(ai.get("net_hours_saved",0)):.1f}h</strong></div><div class="card"><span>キャパシティ価値</span><strong>¥{r["value"]:,.0f}</strong></div><div class="card"><span>AI費用</span><strong>¥{r["cost"]:,.0f}</strong></div><div class="card"><span>推計ROI</span><strong>{roi}</strong></div></div><p class="meta">Capacity-value estimate, not booked cash profit. Include prompting, checking and rework in net time saved.</p></section>'
+        r=ai_roi(ai); scenarios=ai_roi_scenarios(ai)
+        def roi_text(v): return "n/a" if v is None else f"{v:.1f}%"
+        ai_html=f'''<section class="ai-investment"><div class="eyebrow">生成AI投資 · 参照値</div><h2>ROIは一点ではなく、仮定の幅で判断する</h2><p class="meta">時間価値の試算です。現金利益ではありません。AI利用費に加え、人の指示・確認・修正・研修・運用負担を費用側で確認します。</p><div class="scenario-grid"><div><span>控えめ</span><strong>{roi_text(scenarios["conservative"]["roi"])}</strong><small>{scenarios["conservative"]["hours"]:.1f}hの正味削減を仮定</small></div><div class="base-scenario"><span>基準試算</span><strong>{roi_text(scenarios["base"]["roi"])}</strong><small>{scenarios["base"]["hours"]:.1f}h · 価値 ¥{scenarios["base"]["value"]:,.0f}</small></div><div><span>良い場合</span><strong>{roi_text(scenarios["upside"]["roi"])}</strong><small>{scenarios["upside"]["hours"]:.1f}hの正味削減を仮定</small></div></div><div class="assumption-grid"><div><b>損益分岐</b><strong>{"n/a" if scenarios["break_even_hours"] is None else f'{scenarios["break_even_hours"]:.1f}h'}</strong><p>この正味削減時間を下回ると、時間価値ベースの純便益はマイナス。</p></div><div><b>時間価値</b><strong>¥{r["value"]:,.0f}</strong><p>削減時間 × loaded hourly cost。現金支出の削減とは別。</p></div><div><b>現金効果</b><strong>未接続</strong><p>実際に減った契約・請求・人件費等がある場合のみ別途計上。</p></div></div><div class="assumption-note"><b>仮定として残すもの</b><p>正味削減時間、時間単価、学習期間、品質への影響。どの仮定を変えると結論が反転するかを確認し、次回測り直す担当と日付を残します。</p></div></section>'''
     cmp_html=""
     if compare:
         a,n,cov,missing=compare; covs="n/a" if cov is None else f"{cov:.1f}%"
