@@ -184,7 +184,6 @@ func TestMachineInstallUninstallIsIdempotent(t *testing.T) {
 		t.Fatal("expected Taviq config directory removed")
 	}
 }
-\n
 func TestRepositoryMarkerLifecycle(t *testing.T) {
 	dir := enterRepo(t)
 	enabled, err := repoEnabled()
