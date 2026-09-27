@@ -14,17 +14,24 @@ AI coding tool
 
 ## Install in a repository
 
-```bash
-python3 scripts/install_basic.py install
-```
+Taviq Core is a self-contained Go binary.
 
-This configures the repository-local Git hook path to `.taviq/hooks` and remembers the previous `core.hooksPath` so it can be restored.
-
-Uninstall:
+Once `taviq` is available on `PATH`, enable a repository with:
 
 ```bash
-python3 scripts/install_basic.py uninstall
+taviq init
+taviq doctor
 ```
+
+Remove repository enablement with:
+
+```bash
+taviq deinit
+```
+
+`init` preserves the previous `core.hooksPath`; `deinit` restores it.
+
+GitHub Actions are optional and are not required for commit provenance recording.
 
 ## AI execution metadata
 
