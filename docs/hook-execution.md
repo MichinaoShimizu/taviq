@@ -1,14 +1,6 @@
-# Hook Execution Boundary
+# Hook Execution
 
-## Current v0.1
-
-Repository initialization installs a repository-local `prepare-commit-msg` hook.
-
-The current implementation executes the repository-local Basic writer. This keeps v0.1 self-contained while distribution is still repository-based.
-
-## Target distribution
-
-Organization-ready distribution should allow the hook to call an installed Taviq CLI instead:
+Taviq Core is executed by the installed `taviq` binary.
 
 ```text
 Git prepare-commit-msg
@@ -17,37 +9,15 @@ Git prepare-commit-msg
 taviq hook prepare-commit-msg <message-file>
         |
         v
-installed Taviq runtime
+Go Core
 ```
 
-This removes the requirement to copy the Taviq implementation into every repository.
+Repository initialization installs only the Git hook/configuration needed to invoke the binary. The Taviq Core implementation is not copied into each repository.
 
 ## Compatibility requirement
 
-The provenance schema and commit trailer semantics must be identical regardless of runner location:
+Execution location and distribution method must not change v1 provenance semantics.
 
-- repository-local runner
-- machine-installed CLI
-- organization-managed CLI
+The same schema applies whether the binary was installed manually, by a package manager, or by organization-managed fleet tooling.
 
-Distribution location must not change v1 provenance meaning.
-
-## Migration rule
-
-v0.1 keeps the repository-local runner as the default.
-
-A machine-installed runner must be introduced as an explicit capability and dogfooded before repository-local execution is removed.
-
-Repository configuration should contain only enablement/policy state, not a duplicated implementation.
-
-
-## Transitional runner selection
-
-Repository initialization may install a compatibility hook that selects execution in this order:
-
-1. If `taviq` is available on `PATH`, run `taviq hook prepare-commit-msg`.
-2. Otherwise use the repository-local v0.1 writer.
-
-This allows machine/organization-managed installations to be dogfooded without breaking repositories that still depend on the v0.1 local implementation.
-
-The fallback can be removed only after global distribution is independently proven reliable.
+There is no Python Core fallback. If the `taviq` binary is unavailable, the hook must fail visibly rather than silently record misleading provenance.
