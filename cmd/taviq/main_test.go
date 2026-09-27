@@ -147,3 +147,41 @@ func TestObserveThenHookEndToEnd(t *testing.T) {
 		}
 	}
 }
+\n
+func TestMachineInstallUninstallIsIdempotent(t *testing.T) {
+	config := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", config)
+
+	if err := machineInstall(); err != nil {
+		t.Fatal(err)
+	}
+	if err := machineInstall(); err != nil {
+		t.Fatal(err)
+	}
+
+	dir, err := machineConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "state.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var state MachineState
+	if err := json.Unmarshal(b, &state); err != nil {
+		t.Fatal(err)
+	}
+	if state.SchemaVersion != 1 || !state.Installed {
+		t.Fatalf("unexpected machine state: %+v", state)
+	}
+
+	if err := machineUninstall(); err != nil {
+		t.Fatal(err)
+	}
+	if err := machineUninstall(); err != nil && !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Fatal("expected Taviq config directory removed")
+	}
+}
