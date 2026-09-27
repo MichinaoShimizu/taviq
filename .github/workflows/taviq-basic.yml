@@ -28,10 +28,6 @@ jobs:
           if r['tools']: print('**Tools:** '+', '.join(r['tools']))
           if r['modes']: print('**Modes:** '+', '.join(r['modes']))
           if r['models']: print('**Models:** '+', '.join(r['models']))
-          states={}
-          for row in json.load(open('/tmp/taviq-basic.json'))['commits']:
-              states[row.get('verification','unknown')]=states.get(row.get('verification','unknown'),0)+1
-          print('**Verification:** '+', '.join(f'{k} {v}' for k,v in sorted(states.items())))
           print()
           print('Unknown commits are not classified as human-only.')
           PY
