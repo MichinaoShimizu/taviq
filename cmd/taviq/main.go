@@ -35,6 +35,48 @@ func machineConfigDir() (string, error) {
 	return filepath.Join(base, "taviq"), nil
 }
 
+
+func integrationsDir() (string, error) {
+	dir, err := machineConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "integrations"), nil
+}
+
+func installIntegrationAdapters() error {
+	dir, err := integrationsDir()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	adapters := map[string]string{
+		"claude": "#!/bin/sh\nexec taviq observe claude agent\n",
+		"codex":  "#!/bin/sh\nexec taviq observe codex agent\n",
+		"kiro":   "#!/bin/sh\nexec taviq observe kiro agent\n",
+	}
+	for name, body := range adapters {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o755); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func uninstallIntegrationAdapters() error {
+	dir, err := integrationsDir()
+	if err != nil {
+		return err
+	}
+	for _, name := range []string{"claude", "codex", "kiro"} {
+		_ = os.Remove(filepath.Join(dir, name))
+	}
+	_ = os.Remove(dir)
+	return nil
+}
+
 func globalHooksDir() (string, error) {
 	dir, err := machineConfigDir()
 	if err != nil {
@@ -93,7 +135,10 @@ func machineInstall() error {
 	if err := os.WriteFile(filepath.Join(dir, "state.json"), b, 0o644); err != nil {
 		return err
 	}
-	return installGlobalGitHook()
+	if err := installGlobalGitHook(); err != nil {
+		return err
+	}
+	return installIntegrationAdapters()
 }
 
 func machineUninstall() error {
@@ -102,6 +147,9 @@ func machineUninstall() error {
 		return err
 	}
 	if err := uninstallGlobalGitHook(); err != nil {
+		return err
+	}
+	if err := uninstallIntegrationAdapters(); err != nil {
 		return err
 	}
 	_ = os.Remove(filepath.Join(dir, "state.json"))
