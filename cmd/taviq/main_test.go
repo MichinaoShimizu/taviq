@@ -31,7 +31,7 @@ func configureGit() {
 func TestHookGoldenTrailer(t *testing.T) {
 	dir := enterRepo(t)
 	msg := filepath.Join(dir, "msg")
-	_ = os.WriteFile(msg, []byte("Change\n"), 0644)
+	_ = os.WriteFile(msg, []byte("Change\n"), 0o644)
 	t.Setenv("TAVIQ_TOOL", "claude")
 	t.Setenv("TAVIQ_MODE", "agent")
 	if err := hook(msg); err != nil {
@@ -46,10 +46,10 @@ func TestHookGoldenTrailer(t *testing.T) {
 
 func TestHookMultiValueSorted(t *testing.T) {
 	dir := enterRepo(t)
-	_ = os.Mkdir(filepath.Join(dir, ".taviq"), 0755)
-	_ = os.WriteFile(filepath.Join(dir, ".taviq", "runtime.json"), []byte(`{"tools":["codex","claude"],"modes":["agent"],"models":["z","a"]}`), 0644)
+	_ = os.Mkdir(filepath.Join(dir, ".taviq"), 0o755)
+	_ = os.WriteFile(filepath.Join(dir, ".taviq", "runtime.json"), []byte(`{"tools":["codex","claude"],"modes":["agent"],"models":["z","a"]}`), 0o644)
 	msg := filepath.Join(dir, "msg")
-	_ = os.WriteFile(msg, []byte("X\n"), 0644)
+	_ = os.WriteFile(msg, []byte("X\n"), 0o644)
 	if err := hook(msg); err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestDoctorCoreDoesNotRequireGitHubActions(t *testing.T) {
 func TestObserveAccumulatesAndResetsOnHeadChange(t *testing.T) {
 	dir := enterRepo(t)
 	configureGit()
-	_ = os.WriteFile("a", []byte("a"), 0644)
+	_ = os.WriteFile("a", []byte("a"), 0o644)
 	_ = exec.Command("git", "add", "a").Run()
 	_ = exec.Command("git", "commit", "-m", "a").Run()
 
@@ -115,7 +115,7 @@ func TestObserveAccumulatesAndResetsOnHeadChange(t *testing.T) {
 	}
 	oldHead := x.BaseHead
 
-	_ = os.WriteFile("b", []byte("b"), 0644)
+	_ = os.WriteFile("b", []byte("b"), 0o644)
 	_ = exec.Command("git", "add", "b").Run()
 	_ = exec.Command("git", "commit", "-m", "b").Run()
 	_ = observe("kiro", "crew", "")
@@ -131,7 +131,7 @@ func TestObserveThenHookEndToEnd(t *testing.T) {
 	_ = observe("claude", "agent", "sonnet")
 	_ = observe("codex", "agent", "gpt-x")
 	msg := filepath.Join(dir, "msg")
-	_ = os.WriteFile(msg, []byte("Change\n"), 0644)
+	_ = os.WriteFile(msg, []byte("Change\n"), 0o644)
 	if err := hook(msg); err != nil {
 		t.Fatal(err)
 	}
