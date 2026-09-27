@@ -22,7 +22,7 @@ Taviq = **AI Engineering Provenance Layer**.
 - [ ] 実Codexでhook発火をdogfood
 - [ ] 実Kiroでhook発火をdogfood
 - [ ] 実PRでend-to-end確認
-- [ ] install / uninstall UX
+- [x] reversible install / uninstall UX
 - [ ] Basic v0.1 release
 
 ## v0.2 — Provenance quality
