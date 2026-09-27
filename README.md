@@ -70,6 +70,62 @@ Git integrationとAI adapterはmachine-levelです。RepositoryにはTaviq実装
 
 取得できないmetadataは推測しません。
 
+## Output examples
+
+Commit messageの末尾に付くtrailerの例です（model名は説明用のplaceholder）。
+
+Claude Code（main agentのみ）:
+
+```text
+Taviq-Provenance: v1
+Taviq-Tools: claude
+Taviq-Modes: agent
+Taviq-Models: model-main
+Taviq-Agents: claude:main=model-main
+```
+
+Claude Code（main agent + subagent）:
+
+```text
+Taviq-Provenance: v1
+Taviq-Tools: claude
+Taviq-Modes: agent
+Taviq-Models: model-main,model-sub
+Taviq-Agents: claude:main=model-main,claude:sub=model-sub
+```
+
+Claude Code（subagentのmodelを取得できなかった場合。main agentのmodelで埋めません）:
+
+```text
+Taviq-Provenance: v1
+Taviq-Tools: claude
+Taviq-Modes: agent
+Taviq-Models: model-main
+Taviq-Agents: claude:main=model-main,claude:sub
+```
+
+Claude Code + Codex（同じcommit windowで両方を観測）:
+
+```text
+Taviq-Provenance: v1
+Taviq-Tools: claude,codex
+Taviq-Modes: agent
+Taviq-Models: gpt-model,model-main
+Taviq-Agents: claude:main=model-main,codex:main=gpt-model
+```
+
+Kiro / Kiro Crew（modelとmain・subは取得できないため記録しません）:
+
+```text
+Taviq-Provenance: v1
+Taviq-Tools: kiro
+Taviq-Modes: crew
+```
+
+AI toolの関与を観測できなかったcommitにはtrailerを付けません。これはUnknownで、Human-onlyではありません。
+
+各値はcommit window内で観測された集合で、順序・割合・貢献度を表しません。
+
 ## Privacy
 
 Commit provenanceには低機密な最小metadataだけを残します。
