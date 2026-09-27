@@ -99,3 +99,66 @@ KPI設計・Delivery/Quality/ROIの読み方はKPI Playbook側の責務として
 通常のAI開発フローを変えずに、追加AI call/token/creditなしで、どのcommit/PRにどのAI tool/modeの関与が確認できたかを記録できる。
 
 記録できないものはUnknownとして残り、Taviqが推測で埋めない。
+
+
+## Target architecture migration checklist
+
+### Phase A — Single binary Core
+- [x] Go Core selected
+- [x] binary-only init / hook / doctor / deinit acceptance
+- [x] cross-build macOS/Linux/Windows
+- [x] Python removed from Core runtime
+- [ ] stable release artifact/version command
+- [ ] checksum/signing strategy for binary releases
+
+### Phase B — Machine-level install
+- [ ] define `taviq install / uninstall` machine lifecycle
+- [ ] machine config location and schema
+- [ ] reversible global Git integration
+- [ ] preserve existing global Git configuration
+- [ ] upgrade path for installed binary/config
+- [ ] Homebrew distribution
+- [ ] Windows installation path
+- [ ] Linux installation path
+
+### Phase C — Repository implementation zero
+- [ ] define minimal `.taviq.yml` marker schema
+- [ ] make `taviq init` marker-only
+- [ ] make `taviq deinit` marker-only
+- [ ] global Git integration ignores non-enabled repositories
+- [ ] remove repository-local hook files
+- [ ] doctor validates marker + machine integration
+
+### Phase D — Machine-level AI integrations
+- [ ] Claude global integration
+- [ ] Codex global integration
+- [ ] Kiro global integration
+- [ ] integrations call `taviq observe`
+- [ ] preserve existing user tool configuration
+- [ ] safe uninstall of only Taviq-owned configuration
+
+### Phase E — Organization policy
+- [ ] organization policy schema
+- [ ] trusted policy discovery
+- [ ] org policy can enable repository without marker
+- [ ] local marker / org policy precedence rules
+- [ ] policy version compatibility
+- [ ] organization privacy defaults
+- [ ] fleet doctor/status without productivity scoring
+
+### Phase F — Optional forge integrations
+- [ ] reusable GitHub workflow
+- [ ] GitHub App feasibility
+- [ ] Ruleset / Quality Gate rollout guide
+- [ ] GitLab integration model
+- [ ] Bitbucket integration model
+- [ ] Core remains functional with none of these installed
+
+### Phase G — Zero-touch acceptance
+- [ ] fresh managed machine receives Taviq automatically
+- [ ] developer clones org repository
+- [ ] supported AI tool automatically records observation
+- [ ] normal commit receives v1 provenance
+- [ ] developer performs no Taviq-specific setup
+- [ ] unrelated/non-enabled repositories remain untouched
+- [ ] central uninstall/upgrade is safe and reversible
