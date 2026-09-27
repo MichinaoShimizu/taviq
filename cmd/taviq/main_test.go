@@ -260,7 +260,6 @@ func TestDoctorUsesMachineHookAndMarker(t *testing.T) {
 		t.Fatalf("expected machine-level core ready: %+v", x)
 	}
 }
-\n
 func TestMachineInstallOwnsIntegrationAdapters(t *testing.T) {
 	config := t.TempDir()
 	home := t.TempDir()
