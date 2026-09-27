@@ -28,7 +28,7 @@
 - [x] PR changed-files入力からcoverage report JSON生成
 - [x] MVPはread-only GitHub Actions + Job Summary。Check Run書込は後続で決定
 - [ ] PRへTaviq AI Provenance Check Run投稿
-- [x] privacy-minimal provenance envelopeを定義\n- [x] replaceable envelope transport契約を定義\n- [x] short-lived GitHub Actions artifact workflowを追加\n- [x] Local producer outboxを実装\n- [x] Collectorとtransportを分離\n- [ ] GitHub artifact transport adapter\n- [ ] Self-hosted / Cloud HTTPS transport\n- [ ] commit/session evidenceをPRへ集約
+- [x] privacy-minimal provenance envelopeを定義\n- [x] replaceable envelope transport契約を定義\n- [x] short-lived GitHub Actions artifact workflowを追加\n- [x] Local producer outboxを実装\n- [x] Collectorとtransportを分離\n- [x] GitHub artifact direct-upload案を棄却（外部upload APIなし / workflow dispatchはActions writeが必要）\n- [ ] Local/Self-hosted relay ingestion API\n- [ ] Self-hosted / Cloud HTTPS transport\n- [ ] commit/session evidenceをPRへ集約
 - [ ] tool / mode / model / coverage表示
 - [ ] low coverage時にEvidenceが弱いと表示
 - [x] GitHub書込権限をLocal Collectorから分離
