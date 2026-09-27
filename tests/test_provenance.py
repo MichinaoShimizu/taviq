@@ -30,6 +30,19 @@ class ProvenanceTests(unittest.TestCase):
             self.assertEqual(state["observed_files"],["a.py","b.py"])
             self.assertEqual(state["commit_sha"],"abc")
 
+    def test_coverage_is_provenance_not_ai_code_share(self):
+        r=M.aggregate_coverage(["a.py","b.py","c.py"],[{"observed_files":["a.py","b.py"]}])
+        self.assertEqual(r["confirmed_files"],2)
+        self.assertEqual(r["unknown_files"],1)
+        self.assertAlmostEqual(r["coverage"],66.6666666667)
+        check=M.github_check_summary(r)
+        self.assertIn("not percentage of code written by AI",check["details"][0])
+
+    def test_unknown_is_not_human_only(self):
+        r=M.aggregate_coverage(["a.py","b.py"],[{"observed_files":["a.py"]}])
+        self.assertEqual(r["unknown_paths"],["b.py"])
+        self.assertNotIn("human",r)
+
     def test_event_store_is_jsonl(self):
         with tempfile.TemporaryDirectory() as d:
             event={"schema_version":1,"event":{"id":"x"}}
