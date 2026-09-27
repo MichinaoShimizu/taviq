@@ -1,0 +1,27 @@
+name: Taviq Provenance Envelope
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export-envelope:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare envelope directory
+        run: mkdir -p .taviq-out/envelopes
+      - name: Export sample/local session when provided
+        run: |
+          if [ -f .taviq/session.json ]; then
+            python3 scripts/export_envelope.py --session .taviq/session.json --output .taviq-out/envelopes/session.json
+          else
+            echo 'No local session file committed or provided; nothing to export.'
+          fi
+      - name: Upload minimal provenance envelopes
+        if: ${{ hashFiles('.taviq-out/envelopes/*.json') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: taviq-provenance-${{ github.sha }}
+          path: .taviq-out/envelopes/*.json
+          retention-days: 1
+          if-no-files-found: ignore

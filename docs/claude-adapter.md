@@ -44,3 +44,24 @@ For every received event the collector resolves, when available:
 - current HEAD
 
 File-level and commit/PR correlation are the next layer; this MVP deliberately does not inspect diff/source contents.
+
+
+## PR provenance coverage
+
+Taviq can aggregate explicit session file evidence against the changed-file list supplied by the GitHub integration.
+
+Example:
+
+```text
+Taviq AI Provenance
+
+Coverage     66.7%
+Confirmed    2 / 3 files
+Unknown      1 file
+```
+
+Coverage is the share of changed files for which Taviq has provenance evidence. It is **not** the share of code written by AI.
+
+Unknown files are never classified as human-only merely because no AI event was observed.
+
+The core collector produces a GitHub-Check-ready summary, but publishing a Check Run is intentionally kept in the GitHub integration layer so the local collector does not require repository write credentials.

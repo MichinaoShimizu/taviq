@@ -1,0 +1,33 @@
+name: Taviq Basic Provenance
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Analyze commit provenance
+        run: |
+          python3 scripts/commit_provenance.py --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }} > /tmp/taviq-basic.json
+      - name: Publish summary
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          r=json.load(open('/tmp/taviq-basic.json'))['summary']
+          cov='n/a' if r['coverage'] is None else f"{r['coverage']:.1f}%"
+          print('# Taviq AI Provenance')
+          print()
+          print(f'**Commit provenance coverage:** {cov}')
+          print(f'**Confirmed:** {r["confirmed"]} / {r["commits"]} commits')
+          print(f'**Unknown:** {r["unknown"]} commits')
+          if r['tools']: print('**Tools:** '+', '.join(r['tools']))
+          if r['modes']: print('**Modes:** '+', '.join(r['modes']))
+          if r['models']: print('**Models:** '+', '.join(r['models']))
+          print()
+          print('Unknown commits are not classified as human-only.')
+          PY
