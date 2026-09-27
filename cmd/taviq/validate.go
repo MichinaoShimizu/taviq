@@ -21,12 +21,40 @@ var (
 )
 
 type CommitValidation struct {
-	Commit string   `json:"commit"`
-	Status string   `json:"status"` // recorded, unknown or invalid
+	Commit string `json:"commit"`
+	Status string `json:"status"` // recorded, unknown or invalid
+	// Blocks counts provenance blocks when a squash left more than one.
+	Blocks int      `json:"blocks,omitempty"`
 	Errors []string `json:"errors,omitempty"`
 }
 
-// validateTrailers classifies one commit from its trailer lines.
+// validateMessage checks every provenance block of a commit message. A
+// squashed commit is recorded when each of its blocks is.
+func validateMessage(message string) CommitValidation {
+	blocks := provenanceBlocks(strings.Split(message, "\n"), "")
+	if len(blocks) == 0 {
+		return CommitValidation{Status: "unknown"}
+	}
+	r := CommitValidation{Status: "recorded"}
+	if len(blocks) > 1 {
+		r.Blocks = len(blocks)
+	}
+	for i, b := range blocks {
+		status, errs := validateTrailers(b.Lines)
+		if status == "invalid" {
+			r.Status = "invalid"
+		}
+		for _, e := range errs {
+			if len(blocks) > 1 {
+				e = fmt.Sprintf("block %d: %s", i+1, e)
+			}
+			r.Errors = append(r.Errors, e)
+		}
+	}
+	return r
+}
+
+// validateTrailers classifies one provenance block from its v1 field lines.
 func validateTrailers(lines []string) (string, []string) {
 	fields := map[string][]string{}
 	for _, line := range lines {
@@ -154,7 +182,7 @@ func asSet(xs []string) map[string]bool {
 // validateCommits checks one commit, or every commit of a range such as
 // origin/main..HEAD, newest first.
 func validateCommits(rev string) ([]CommitValidation, error) {
-	args := []string{"log", "--format=%x00%H%n%(trailers:only,unfold)"}
+	args := []string{"log", "--format=%x00%H%n%B"}
 	if !strings.Contains(rev, "..") {
 		args = append(args, "--no-walk")
 	}
@@ -164,9 +192,10 @@ func validateCommits(rev string) ([]CommitValidation, error) {
 	}
 	results := []CommitValidation{}
 	for _, record := range strings.Split(string(out), "\x00")[1:] {
-		lines := strings.Split(strings.TrimRight(record, "\n"), "\n")
-		status, errs := validateTrailers(lines[1:])
-		results = append(results, CommitValidation{Commit: lines[0], Status: status, Errors: errs})
+		sha, message, _ := strings.Cut(record, "\n")
+		r := validateMessage(message)
+		r.Commit = sha
+		results = append(results, r)
 	}
 	return results, nil
 }

@@ -130,3 +130,64 @@ func TestValidateCommitsRange(t *testing.T) {
 		t.Fatal("expected error for unknown revision")
 	}
 }
+
+// githubSquash mirrors the message GitHub writes for a squash merge: each
+// commit's trailer paragraph stays in the body and GitHub appends its own
+// Co-authored-by paragraph, which Git then reads as the only trailer block.
+const githubSquash = `Add feature (#12)
+
+* First change
+
+Explain the change. The trailer looks like
+Taviq-Tools: kiro
+in prose, which is not provenance.
+
+Co-Authored-By: Someone <someone@example.com>
+Taviq-Provenance: v1
+Taviq-Tools: claude
+Taviq-Modes: agent
+Taviq-Models: model-a
+Taviq-Agents: claude:main=model-a
+
+* Second change
+
+Taviq-Provenance: v1
+Taviq-Tools: codex
+Taviq-Modes: agent
+
+---------
+
+Co-authored-by: Someone <someone@example.com>
+`
+
+func TestValidateMessageSquash(t *testing.T) {
+	r := validateMessage(githubSquash)
+	if r.Status != "recorded" || r.Blocks != 2 || len(r.Errors) != 0 {
+		t.Fatalf("got %+v", r)
+	}
+	broken := strings.Replace(githubSquash, "Taviq-Tools: codex", "Taviq-Tools: codex,claude", 1)
+	r = validateMessage(broken)
+	if r.Status != "invalid" || !strings.Contains(strings.Join(r.Errors, "\n"), "block 2:") {
+		t.Fatalf("got %+v", r)
+	}
+	if r := validateMessage("Prose\n\nmentions Taviq-Provenance: v1 inline\n"); r.Status != "unknown" {
+		t.Fatalf("prose counted as provenance: %+v", r)
+	}
+}
+
+func TestValidateCommitsSquashMerge(t *testing.T) {
+	dir := enterRepo(t)
+	configureGit()
+	msg := filepath.Join(dir, "msg")
+	_ = os.WriteFile(msg, []byte(githubSquash), 0o644)
+	if out, err := exec.Command("git", "commit", "--allow-empty", "--cleanup=verbatim", "-F", msg).CombinedOutput(); err != nil {
+		t.Fatal(string(out))
+	}
+	results, err := validateCommits("HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 || results[0].Status != "recorded" || results[0].Blocks != 2 {
+		t.Fatalf("got %+v", results)
+	}
+}

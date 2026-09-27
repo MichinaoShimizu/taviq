@@ -165,15 +165,27 @@ A commit is `Unknown` when Taviq has no usable provenance evidence.
 
 Unknown does not mean Human-only.
 
+### Squashed commits
+
+Squashing moves each commit's trailers into the body of the new message. A GitHub squash merge keeps every commit's trailer paragraph and appends its own `Co-authored-by` paragraph, which Git then reads as the only trailer block. Interactive rebase (`squash` / `fixup`) and `git merge --squash` concatenate the old messages.
+
+Readers therefore look for **provenance blocks** anywhere in the message, not only in the trailer block. A provenance block is a paragraph in which every line has trailer form (`Key: value`, surrounding whitespace ignored) and at least one line is a v1 Taviq field. A line in prose that mentions a Taviq field is not a block, because the rest of its paragraph is not trailers.
+
+A commit with several blocks is Recorded as the union of its blocks: the tools, modes, models and agents observed on any of the squashed commits. Like any v1 set, the union carries no order, share or contribution.
+
+When a local squash leaves several blocks, the `prepare-commit-msg` hook merges them into one trailer block at the end of the message. A message that already carries provenance (squash, fixup, amend) keeps its own evidence: runtime observations are not added to it. Blocks that do not all declare `v1` are left as written.
+
+A GitHub squash merge cannot run the hook, so its commit keeps several blocks and readers take the union. The repository's squash merge message must include the commit messages (GitHub's "Default message" or "Pull request title and commit details"). "Pull request title and description" drops every commit message, so the squashed commit is Unknown.
+
 ### Validation
 
-`taviq validate [<commit>|<range>]` checks commit trailers against this schema. It defaults to `HEAD`; a range such as `origin/main..HEAD` checks every commit in it.
+`taviq validate [<commit>|<range>]` checks every provenance block of each commit against this schema. It defaults to `HEAD`; a range such as `origin/main..HEAD` checks every commit in it.
 
 Each commit is reported as one of:
 
-- `recorded` — a well-formed v1 trailer block
-- `unknown` — no v1 Taviq trailer
-- `invalid` — v1 Taviq trailers that break the rules above: missing `Taviq-Provenance` or `Taviq-Tools`, a version other than `v1`, a repeated field, empty/whitespace/unsorted/duplicated values, an unsupported tool, mode or role, or a `Taviq-Agents` entry whose tool or model is not listed in `Taviq-Tools` / `Taviq-Models`
+- `recorded` — every provenance block is well-formed v1; `blocks` reports the count when a squash left more than one
+- `unknown` — no provenance block
+- `invalid` — a block that breaks the rules above: missing `Taviq-Provenance` or `Taviq-Tools`, a version other than `v1`, a repeated field, empty/whitespace/unsorted/duplicated values, an unsupported tool, mode or role, or a `Taviq-Agents` entry whose tool or model is not listed in `Taviq-Tools` / `Taviq-Models`
 
 The command exits non-zero only when a commit is `invalid`. `unknown` is not an error, because Unknown does not mean Human-only and missing evidence is expected.
 

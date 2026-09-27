@@ -48,7 +48,8 @@ Taviq = **AI Engineering Provenance Layer**.
 - [x] 独自HMAC/signing systemを採用しない
 - [ ] 標準的なsupply-chain attestation/signing方式を必要性から評価
 - [x] spoofing / tampering threat model
-- [ ] monorepo / worktree / squash merge対応
+- [x] squash merge対応（GitHub squash / `rebase -i` / `merge --squash`）
+- [ ] monorepo / worktree対応
 - [ ] merge commit / rebase対応
 - [ ] bot / cloud agent provenance
 - [ ] Web / Mobile → Cloud Agent provenance

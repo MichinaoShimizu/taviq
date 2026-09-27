@@ -597,3 +597,103 @@ func TestDoctorReportsVersion(t *testing.T) {
 		t.Fatalf("doctor version = %v, want %q", x["version"], taviqVersion())
 	}
 }
+
+func TestHookConsolidatesRebaseSquash(t *testing.T) {
+	dir := enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	// Leftover runtime must not leak into a message that already has provenance.
+	if err := observe("kiro", "crew", ""); err != nil {
+		t.Fatal(err)
+	}
+	msg := filepath.Join(dir, "msg")
+	_ = os.WriteFile(msg, []byte(`# This is a combination of 2 commits.
+# This is the 1st commit message:
+
+First
+
+Taviq-Provenance: v1
+Taviq-Tools: claude
+Taviq-Models: model-a
+Taviq-Agents: claude:main=model-a
+
+# This is the commit message #2:
+
+Second
+
+Co-Authored-By: Someone <someone@example.com>
+Taviq-Provenance: v1
+Taviq-Tools: codex
+Taviq-Modes: agent
+`), 0o644)
+	if err := hook(msg); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(msg)
+	got := string(b)
+	if strings.Count(got, "Taviq-Provenance:") != 1 {
+		t.Fatalf("blocks not merged:\n%s", got)
+	}
+	want := "Co-Authored-By: Someone <someone@example.com>\nTaviq-Provenance: v1\nTaviq-Tools: claude,codex\nTaviq-Modes: agent\nTaviq-Models: model-a\nTaviq-Agents: claude:main=model-a\n"
+	if !strings.HasSuffix(got, want) {
+		t.Fatalf("want suffix\n%s\ngot\n%s", want, got)
+	}
+	if strings.Contains(got, "kiro") {
+		t.Fatalf("runtime leaked into existing provenance:\n%s", got)
+	}
+}
+
+func TestHookConsolidatesMergeSquash(t *testing.T) {
+	dir := enterRepo(t)
+	configureGit()
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	run := func(args ...string) {
+		if out, err := exec.Command("git", args...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %s", args, out)
+		}
+	}
+	run("add", ".taviq.yml")
+	run("commit", "-m", "base")
+	run("checkout", "-q", "-b", "topic")
+	run("commit", "--allow-empty", "-m", "One\n\nTaviq-Provenance: v1\nTaviq-Tools: claude")
+	_ = os.WriteFile(filepath.Join(dir, "f"), []byte("x"), 0o644)
+	run("add", "f")
+	run("commit", "-m", "Two\n\nTaviq-Provenance: v1\nTaviq-Tools: codex")
+	run("checkout", "-q", "-")
+	run("merge", "--squash", "topic")
+	msg := filepath.Join(dir, ".git", "SQUASH_MSG")
+	if err := hook(msg); err != nil {
+		t.Fatal(err)
+	}
+	run("commit", "--no-edit", "-F", msg)
+	results, err := validateCommits("HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, _ := exec.Command("git", "log", "-1", "--format=%(trailers:only)").Output()
+	if results[0].Status != "recorded" || results[0].Blocks != 0 || !strings.Contains(string(out), "Taviq-Tools: claude,codex") {
+		t.Fatalf("got %+v\ntrailers:\n%s", results, out)
+	}
+}
+
+func TestHookKeepsSingleTrailerBlock(t *testing.T) {
+	dir := enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	if err := observe("codex", "agent", ""); err != nil {
+		t.Fatal(err)
+	}
+	body := "Amend\n\nTaviq-Provenance: v1\nTaviq-Tools: claude\n"
+	msg := filepath.Join(dir, "msg")
+	_ = os.WriteFile(msg, []byte(body), 0o644)
+	if err := hook(msg); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(msg); string(b) != body {
+		t.Fatalf("message changed: %q", b)
+	}
+}

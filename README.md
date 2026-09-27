@@ -137,6 +137,8 @@ taviq validate origin/main..HEAD  # 範囲内の全commit
 
 各commitを`recorded` / `unknown` / `invalid`に分類し、`invalid`があるときだけ失敗します。形式のチェックであり、真正性の検証ではありません。
 
+Squash merge後のcommitも読めます。GitHubのsquashで本文に残った各commitのtrailerは、unionとしてRecordedになります。GitHubのsquash merge messageは、commit messageを含む設定（Default message / Pull request title and commit details）にしてください。
+
 ## Privacy
 
 Commit provenanceには低機密な最小metadataだけを残します。
