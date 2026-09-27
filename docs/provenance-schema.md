@@ -187,17 +187,27 @@ The same principle applies to multiple modes and models.
 
 ## 4. Time/window semantics
 
-Basic accumulates observations in repository-local runtime state within an explicit accumulation window. A supported AI session-start integration resets the window; observations within that window are accumulated.
+Basic uses a repository-local **accumulation window**.
 
-This is an implementation window, not a guaranteed task or commit boundary. Taviq does not clear runtime in `prepare-commit-msg`, because Git may still reject the commit after that hook and clearing would lose evidence.
+Tool integrations add observations to the current window. Switching from Claude to Codex or Kiro does not reset it; this is required to preserve multi-tool provenance.
 
-Therefore a tool appearing in a commit provenance record means:
+The window is not a guaranteed task, session, commit, or file boundary.
 
-> Taviq observed that tool during the current provenance accumulation window when the commit trailer was prepared.
+Taviq does not automatically clear runtime from `prepare-commit-msg`, because Git may reject the commit after that hook and evidence would be lost.
 
-It does not prove that the tool changed every file in that commit.
+Runtime can be explicitly cleared with:
 
-Future versions may add stronger session/file correlation, but must use a different field/schema rather than silently changing v1 semantics.
+```bash
+python3 scripts/set_runtime.py --clear
+```
+
+Until a stronger lifecycle boundary is available, a commit record means:
+
+> Taviq observed these tools/modes/models in the repository-local accumulation window that existed when the commit trailer was prepared.
+
+It does not prove that every recorded tool contributed to that exact commit or every file in it.
+
+This limitation must remain visible in Basic v1 semantics. A future stronger session/commit correlation mechanism must use new fields or a schema version rather than silently strengthening the meaning of v1.
 
 ## 5. Privacy boundary
 
