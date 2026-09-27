@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert ephemeral Taviq runtime observations into minimal commit trailers."""
+"""Convert ephemeral Taviq runtime observations into Basic commit trailers."""
 import json, os, subprocess, sys, time
 from pathlib import Path
 
@@ -17,30 +17,23 @@ def runtime_path():
 
 def load_runtime():
     p=runtime_path()
-    if not p or not p.exists(): return {"tools":[],"modes":[],"models":[]}
-    try: x=json.loads(p.read_text())
-    except Exception: return {"tools":[],"modes":[],"models":[]}
-    # Backward compatibility with pre-multi-value runtime.
-    if "tool" in x:
-        x={"tools":[x["tool"]],"modes":[x["mode"]] if x.get("mode") else [],"models":[x["model"]] if x.get("model") else []}
-    return {
-        "tools":sorted(set(v for v in x.get("tools",[]) if isinstance(v,str) and v)),
-        "modes":sorted(set(v for v in x.get("modes",[]) if v in ALLOWED_MODES)),
-        "models":sorted(set(v for v in x.get("models",[]) if isinstance(v,str) and v)),
-    }
+    if not p or not p.exists(): return {}
+    try: return json.loads(p.read_text())
+    except Exception: return {}
 
-def observations(env=os.environ):
-    x=load_runtime()
-    if env.get("TAVIQ_TOOL"): x["tools"]=sorted(set(x["tools"]+[env["TAVIQ_TOOL"]]))
-    if env.get("TAVIQ_MODE") in ALLOWED_MODES: x["modes"]=sorted(set(x["modes"]+[env["TAVIQ_MODE"]]))
-    if env.get("TAVIQ_MODEL"): x["models"]=sorted(set(x["models"]+[env["TAVIQ_MODEL"]]))
-    return x
+def values(runtime,env):
+    tools=set(runtime.get("tools",[])); modes=set(runtime.get("modes",[])); models=set(runtime.get("models",[]))
+    if env.get("TAVIQ_TOOL"): tools.add(env["TAVIQ_TOOL"])
+    if env.get("TAVIQ_MODE") in ALLOWED_MODES: modes.add(env["TAVIQ_MODE"])
+    if env.get("TAVIQ_MODEL"): models.add(env["TAVIQ_MODEL"])
+    return sorted(tools),sorted(m for m in modes if m in ALLOWED_MODES),sorted(models)
 
-def trailer_lines(obs):
-    if not obs["tools"]: return []
-    lines=["Taviq-Provenance: v1","Taviq-Tools: "+",".join(obs["tools"])]
-    if obs["modes"]: lines.append("Taviq-Modes: "+",".join(obs["modes"]))
-    if obs["models"]: lines.append("Taviq-Models: "+",".join(obs["models"]))
+def trailer_lines(runtime,env):
+    tools,modes,models=values(runtime,env)
+    if not tools: return []
+    lines=["Taviq-Provenance: v1","Taviq-Tools: "+",".join(tools)]
+    if modes: lines.append("Taviq-Modes: "+",".join(modes))
+    if models: lines.append("Taviq-Models: "+",".join(models))
     return lines
 
 def clear_runtime():
@@ -49,17 +42,15 @@ def clear_runtime():
 
 def apply(path,env=os.environ):
     started=time.perf_counter()
-    lines=trailer_lines(observations(env))
-    if not lines:
-        return {"applied":False,"elapsed_ms":(time.perf_counter()-started)*1000,"metadata_bytes":0}
+    lines=trailer_lines(load_runtime(),env)
+    if not lines: return {"applied":False,"elapsed_ms":(time.perf_counter()-started)*1000,"metadata_bytes":0}
     p=Path(path); text=p.read_text()
-    if "Taviq-Provenance:" in text:
-        return {"applied":False,"elapsed_ms":(time.perf_counter()-started)*1000,"metadata_bytes":0}
+    if "Taviq-Provenance:" in text: return {"applied":False,"elapsed_ms":(time.perf_counter()-started)*1000,"metadata_bytes":0}
     trailer="\n".join(lines)+"\n"
     suffix="\n" if text.endswith("\n") else "\n\n"
     p.write_text(text+suffix+trailer)
     clear_runtime()
-    return {"applied":True,"elapsed_ms":(time.perf_counter()-started)*1000,"metadata_bytes":len(trailer.encode())}
+    return {"applied":True,"elapsed_ms":(time.perf_counter()-started)*1000,"metadata_bytes":len(trailer.encode("utf-8"))}
 
 if __name__=="__main__":
     if len(sys.argv)<2: raise SystemExit("commit message path required")
