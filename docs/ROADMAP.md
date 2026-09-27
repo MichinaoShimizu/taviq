@@ -27,7 +27,7 @@ Taviq = **AI Engineering Provenance Layer**.
 
 ## v0.2 — Organization-ready provenance
 
-- [ ] global Taviq CLI: install once per developer machine
+- [ ] importable `src/taviq` package boundary\n- [ ] isolated global Taviq CLI install (pipx first candidate)\n- [ ] installed-package acceptance test outside source checkout
 - [ ] `taviq init / deinit / doctor` repository UX
 - [ ] organization policy schema
 - [ ] repository opt-in / policy discovery
