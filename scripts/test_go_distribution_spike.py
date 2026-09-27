@@ -33,20 +33,20 @@ with tempfile.TemporaryDirectory() as td:
 
     # The external repository intentionally contains no Taviq source files.
     (repo / ".taviq.yml").write_text("version: 1\n")
-    subprocess.check_call([str(linux), "init"], cwd=repo)
+    env_machine = dict(os.environ, XDG_CONFIG_HOME=str(pathlib.Path(td) / "config"), HOME=str(pathlib.Path(td) / "home"))\n    pathlib.Path(env_machine["HOME"]).mkdir()\n    subprocess.check_call([str(linux), "install"], cwd=repo, env=env_machine)\n    subprocess.check_call([str(linux), "init"], cwd=repo, env=env_machine)
 
     msg = repo / "message"
     msg.write_text("External checkout test\n")
     env = dict(os.environ, TAVIQ_TOOL="claude", TAVIQ_MODE="agent")
-    subprocess.check_call([str(linux), "hook", "prepare-commit-msg", str(msg)], cwd=repo, env=env)
+    env.update({"XDG_CONFIG_HOME": env_machine["XDG_CONFIG_HOME"], "HOME": env_machine["HOME"]})\n    subprocess.check_call([str(linux), "hook", "prepare-commit-msg", str(msg)], cwd=repo, env=env)
     text = msg.read_text()
     assert "Taviq-Provenance: v1" in text
     assert "Taviq-Tools: claude" in text
 
-    doctor = subprocess.run([str(linux), "doctor"], cwd=repo, text=True, capture_output=True)
+    doctor = subprocess.run([str(linux), "doctor"], cwd=repo, env=env_machine, text=True, capture_output=True)
     assert doctor.returncode == 0, doctor.stderr + doctor.stdout
 
-    subprocess.check_call([str(linux), "deinit"], cwd=repo)
+    subprocess.check_call([str(linux), "deinit"], cwd=repo, env=env_machine)\n    subprocess.check_call([str(linux), "uninstall"], cwd=repo, env=env_machine)
 
 shutil.rmtree(out)
 print(json.dumps({"targets": results, "binary_only_external_repo": "passed"}, indent=2))
