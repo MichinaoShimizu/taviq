@@ -153,7 +153,8 @@ func TestAgentHookLeavesInvalidSettingsUntouched(t *testing.T) {
 	})
 }
 
-func observedRuntime(t *testing.T) Runtime {
+// observedRuntime returns the trailer view of the recorded observations.
+func observedRuntime(t *testing.T) Provenance {
 	t.Helper()
 	path, err := runtimePath()
 	if err != nil {
@@ -165,7 +166,7 @@ func observedRuntime(t *testing.T) Runtime {
 	}
 	var x Runtime
 	_ = json.Unmarshal(b, &x)
-	return x
+	return x.provenance()
 }
 
 func hookEventInRepo(t *testing.T, fields map[string]any) (string, string) {

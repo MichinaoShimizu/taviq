@@ -26,15 +26,77 @@ func taviqVersion() string {
 	return "dev"
 }
 
+// Observation is one observed agent tool call. It is the only thing runtime
+// stores; every trailer field is derived from the set of observations, so
+// tools, models and agents can never disagree with each other. Empty fields
+// are unknown.
+type Observation struct {
+	Tool  string `json:"tool"`
+	Mode  string `json:"mode,omitempty"`
+	Model string `json:"model,omitempty"`
+	// Role is "main" or "sub" when the integration itself reveals whether the
+	// main agent or a subagent made the tool call.
+	Role string `json:"role,omitempty"`
+}
+
+// runtimeSchemaVersion 2 replaced the parallel tools/modes/models/agents lists
+// with observations.
+const runtimeSchemaVersion = 2
+
 type Runtime struct {
-	SchemaVersion int      `json:"schema_version"`
-	BaseHead      string   `json:"base_head,omitempty"`
-	Tools         []string `json:"tools"`
-	Modes         []string `json:"modes"`
-	Models        []string `json:"models"`
-	// Agents records "<tool>:<role>[=<model>]" when the integration itself
-	// reveals whether the main agent or a subagent made the tool call.
-	Agents []string `json:"agents,omitempty"`
+	SchemaVersion int           `json:"schema_version"`
+	BaseHead      string        `json:"base_head,omitempty"`
+	Observations  []Observation `json:"observations"`
+	// Lists written by schema_version 1. They are only read, so an upgrade in
+	// the middle of a window keeps its evidence, and are dropped with the
+	// window.
+	LegacyTools  []string `json:"tools,omitempty"`
+	LegacyModes  []string `json:"modes,omitempty"`
+	LegacyModels []string `json:"models,omitempty"`
+	LegacyAgents []string `json:"agents,omitempty"`
+}
+
+// Provenance is the commit trailer view of a window.
+type Provenance struct {
+	Tools, Modes, Models, Agents []string
+}
+
+// provenance projects observations onto the trailer fields. Agents are
+// "<tool>:<role>[=<model>]" for observations whose role is known.
+func (x Runtime) provenance() Provenance {
+	p := Provenance{
+		Tools:  append([]string{}, x.LegacyTools...),
+		Modes:  append([]string{}, x.LegacyModes...),
+		Models: append([]string{}, x.LegacyModels...),
+		Agents: append([]string{}, x.LegacyAgents...),
+	}
+	for _, o := range x.Observations {
+		p.Tools = append(p.Tools, o.Tool)
+		p.Modes = append(p.Modes, o.Mode)
+		p.Models = append(p.Models, o.Model)
+		if o.Tool != "" && o.Role != "" {
+			agent := o.Tool + ":" + o.Role
+			if o.Model != "" {
+				agent += "=" + o.Model
+			}
+			p.Agents = append(p.Agents, agent)
+		}
+	}
+	p.Tools, p.Modes, p.Models, p.Agents = uniq(p.Tools), uniq(p.Modes), uniq(p.Models), uniq(p.Agents)
+	return p
+}
+
+func (x *Runtime) add(o Observation) {
+	for _, seen := range x.Observations {
+		if seen == o {
+			return
+		}
+	}
+	x.Observations = append(x.Observations, o)
+	sort.Slice(x.Observations, func(i, j int) bool {
+		a, b := x.Observations[i], x.Observations[j]
+		return strings.Join([]string{a.Tool, a.Mode, a.Model, a.Role}, "\x00") < strings.Join([]string{b.Tool, b.Mode, b.Model, b.Role}, "\x00")
+	})
 }
 
 // agentRoles are the roles an integration can report: the agent the user
@@ -381,24 +443,10 @@ func observeAgent(tool, mode, model, role string) error {
 		_ = json.Unmarshal(b, &x)
 	}
 	if x.BaseHead != current {
-		x = Runtime{SchemaVersion: 1, BaseHead: current, Tools: []string{}, Modes: []string{}, Models: []string{}}
+		x = Runtime{BaseHead: current}
 	}
-	x.SchemaVersion = 1
-	x.BaseHead = current
-	x.Tools = uniq(append(x.Tools, tool))
-	if mode != "" {
-		x.Modes = uniq(append(x.Modes, mode))
-	}
-	if model != "" {
-		x.Models = uniq(append(x.Models, model))
-	}
-	if role != "" {
-		agent := tool + ":" + role
-		if model != "" {
-			agent += "=" + model
-		}
-		x.Agents = uniq(append(x.Agents, agent))
-	}
+	x.SchemaVersion = runtimeSchemaVersion
+	x.add(Observation{Tool: tool, Mode: mode, Model: model, Role: role})
 	b, err := json.Marshal(x)
 	if err != nil {
 		return err
@@ -422,20 +470,12 @@ func hook(message string) error {
 	if data, err := os.ReadFile(path); err == nil {
 		_ = json.Unmarshal(data, &x)
 	}
-	if tool := os.Getenv("TAVIQ_TOOL"); tool != "" {
-		x.Tools = append(x.Tools, tool)
+	// Environment variables are the backward-compatible fallback integration.
+	if env := (Observation{Tool: os.Getenv("TAVIQ_TOOL"), Mode: os.Getenv("TAVIQ_MODE"), Model: os.Getenv("TAVIQ_MODEL")}); env != (Observation{}) {
+		x.add(env)
 	}
-	if mode := os.Getenv("TAVIQ_MODE"); mode != "" {
-		x.Modes = append(x.Modes, mode)
-	}
-	if model := os.Getenv("TAVIQ_MODEL"); model != "" {
-		x.Models = append(x.Models, model)
-	}
-	x.Tools = uniq(x.Tools)
-	x.Modes = uniq(x.Modes)
-	x.Models = uniq(x.Models)
-	x.Agents = uniq(x.Agents)
-	if len(x.Tools) == 0 {
+	p := x.provenance()
+	if len(p.Tools) == 0 {
 		return nil
 	}
 	// Only the trailer block counts: comment lines and a verbose diff below the
@@ -449,15 +489,15 @@ func hook(message string) error {
 			return nil
 		}
 	}
-	trailers := []string{"Taviq-Provenance: v1", "Taviq-Tools: " + strings.Join(x.Tools, ",")}
-	if len(x.Modes) > 0 {
-		trailers = append(trailers, "Taviq-Modes: "+strings.Join(x.Modes, ","))
+	trailers := []string{"Taviq-Provenance: v1", "Taviq-Tools: " + strings.Join(p.Tools, ",")}
+	if len(p.Modes) > 0 {
+		trailers = append(trailers, "Taviq-Modes: "+strings.Join(p.Modes, ","))
 	}
-	if len(x.Models) > 0 {
-		trailers = append(trailers, "Taviq-Models: "+strings.Join(x.Models, ","))
+	if len(p.Models) > 0 {
+		trailers = append(trailers, "Taviq-Models: "+strings.Join(p.Models, ","))
 	}
-	if len(x.Agents) > 0 {
-		trailers = append(trailers, "Taviq-Agents: "+strings.Join(x.Agents, ","))
+	if len(p.Agents) > 0 {
+		trailers = append(trailers, "Taviq-Agents: "+strings.Join(p.Agents, ","))
 	}
 	// Explicit placement overrides any trailer.* settings in user Git config.
 	args := []string{"interpret-trailers", "--in-place", "--where", "end", "--if-exists", "add", "--if-missing", "add"}
