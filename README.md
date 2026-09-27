@@ -171,14 +171,19 @@ Taviq Provenance + Cost         → 投資分析の入力
 
 これらの組み合わせから因果を自動的に断定しません。
 
-## 設計ドキュメント\n\n- [Basic setup](docs/basic.md)\n- [Provenance Schema & Semantics](docs/provenance-schema.md)\n- [Provenance Trust Model](docs/verified-provenance.md)\n- [Implementation Roadmap](docs/ROADMAP.md)\n\n## 現在の方針
+## 設計ドキュメント
 
-Taviqは当面、**AI Engineering Provenance Layer** に集中します。
+現行Basicの仕様・意味論はこちらです。
 
-過去に作成したDelivery / ROI / Collector / Relay等の実験は、Provenanceの利用可能性を検証したものです。現行Basicの仕様ではありません。今後の新規開発優先度はProvenance Basicの正確性、対応ツール、導入容易性、privacy、overhead、監査可能性を最優先とします。
+- [Basic setup](docs/basic.md) — 導入方法とBasicの動作
+- [Provenance Schema & Semantics](docs/provenance-schema.md) — データ構造と各フィールドの意味
+- [Provenance Trust Model](docs/verified-provenance.md) — Recorded / Unknownと信頼境界
+- [Implementation Roadmap](docs/ROADMAP.md) — 現在地と今後の計画
 
-## Historical / experimental code
+## 現在の方針
 
-リポジトリには、Provenance専用へ方針転換する前に作成したDelivery / ROI / Collector / Relayの実験コード・文書が一部残っています。これらは**現行Taviq Basicの導入経路ではありません**。
+Taviqは **AI Engineering Provenance Layer** に集中します。
 
-現行の正本は README、[Basic setup](docs/basic.md)、[Deployment Modes](docs/deployment-modes.md)、[Provenance Trust Model](docs/verified-provenance.md)、[Roadmap](docs/ROADMAP.md) です。
+Delivery / ROI / Collector / Relayなど、方針転換前に検討したEngineering Intelligence機能は現行Basicの責務ではありません。必要な分析は、Taviqが残すProvenanceを下流のKPI/分析レイヤーで利用します。
+
+今後はProvenance Basicの正確性、対応ツール、導入容易性、privacy、overhead、意味論の安定性を優先します。
