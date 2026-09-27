@@ -63,7 +63,8 @@ Git integrationとAI adapterはmachine-levelです。RepositoryにはTaviq実装
 | --- | --- |
 | Claude Code | tool / mode / optional model |
 | Codex | tool / mode / optional model |
-| Kiro | tool / mode / optional model |\n| Kiro Crew | tool=kiro / mode=crew / optional model |
+| Kiro | tool / mode / optional model |
+| Kiro Crew | tool=kiro / mode=crew / optional model |
 
 取得できないmetadataは推測しません。
 
