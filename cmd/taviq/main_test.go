@@ -67,42 +67,6 @@ func TestHookMultiValueSorted(t *testing.T) {
 	}
 }
 
-func TestInitDeinitRestoresHooksPath(t *testing.T) {
-	enterRepo(t)
-	_ = exec.Command("git", "config", "core.hooksPath", ".original").Run()
-	if err := initRepo(); err != nil {
-		t.Fatal(err)
-	}
-	if err := initRepo(); err != nil {
-		t.Fatal(err)
-	}
-	if err := deinitRepo(); err != nil {
-		t.Fatal(err)
-	}
-	b, err := exec.Command("git", "config", "--get", "core.hooksPath").Output()
-	if err != nil || strings.TrimSpace(string(b)) != ".original" {
-		t.Fatalf("hooksPath not restored: %s %v", b, err)
-	}
-}
-
-func TestDoctorCoreDoesNotRequireGitHubActions(t *testing.T) {
-	enterRepo(t)
-	if err := initRepo(); err != nil {
-		t.Fatal(err)
-	}
-	x, err := diagnose()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !x["core_ready"].(bool) {
-		t.Fatal("expected core ready")
-	}
-	checks := x["checks"].(map[string]bool)
-	if checks["github_pr_summary"] {
-		t.Fatal("GitHub Actions must remain optional")
-	}
-}
-
 func TestObserveAccumulatesAndResetsOnHeadChange(t *testing.T) {
 	dir := enterRepo(t)
 	configureGit()
@@ -260,5 +224,37 @@ func TestGlobalGitHookRefusesExistingOwner(t *testing.T) {
 	out, _ := exec.Command("git", "config", "--global", "--get", "core.hooksPath").Output()
 	if strings.TrimSpace(string(out)) != "/other/hooks" {
 		t.Fatal("existing global hooksPath must remain unchanged")
+	}
+}
+
+
+func TestMarkerOnlyInitCreatesNoRepositoryHook(t *testing.T) {
+	dir := enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".taviq", "hooks", "prepare-commit-msg")); !os.IsNotExist(err) {
+		t.Fatal("repository-local hook must not be created")
+	}
+}
+
+func TestDoctorUsesMachineHookAndMarker(t *testing.T) {
+	config := t.TempDir()
+	home := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", config)
+	t.Setenv("HOME", home)
+	enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	if err := machineInstall(); err != nil {
+		t.Fatal(err)
+	}
+	x, err := diagnose()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !x["core_ready"].(bool) {
+		t.Fatalf("expected machine-level core ready: %+v", x)
 	}
 }
