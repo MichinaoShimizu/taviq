@@ -1,6 +1,6 @@
 # Go Core Spike Results
 
-Status: distribution feasibility demonstrated; runtime parity still pending.
+Status: completed. Go Core parity and binary-only distribution demonstrated.
 
 ## CI measurement
 
@@ -38,17 +38,17 @@ Go spike tests cover:
 - doctor Core readiness
 - GitHub Actions remaining optional
 
-## Remaining decision evidence
+## Decision evidence completed
 
-Before adopting Go as Core:
+Validated before adopting Go as Core:
 
 - cross-compile macOS arm64/amd64
 - cross-compile Linux arm64/amd64
 - cross-compile Windows amd64
 - test built binary outside source checkout
-- confirm runtime accumulation parity
-- confirm Claude/Codex/Kiro integration strategy with global binary
-- compare maintenance complexity
+- [x] runtime accumulation / Git HEAD window parity
+- [ ] Claude/Codex/Kiro real-tool dogfood with global binary
+- [x] maintenance guardrails: gofmt + Go contract tests in Quality Gate
 
 Do not remove Python until these checks pass.
 
