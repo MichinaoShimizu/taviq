@@ -174,7 +174,7 @@ Taviq Provenance + Cost         → 投資分析の入力
 ## 設計ドキュメント
 
 - [Basic setup](docs/basic.md)
-- [AI Provenance & Storage Architecture](docs/ai-provenance-storage.md)
+- [Provenance Trust Model](docs/verified-provenance.md)
 - [Data Capability Model](docs/data-capability-model.md)
 - [Deployment Modes](docs/deployment-modes.md)
 - [Implementation Roadmap](docs/ROADMAP.md)
@@ -184,3 +184,9 @@ Taviq Provenance + Cost         → 投資分析の入力
 Taviqは当面、**AI Engineering Provenance Layer** に集中します。
 
 過去に作成したDelivery / ROI / executive reportingの実験コードやサンプルは、Provenanceの将来的な利用可能性を検証したものです。今後の新規開発優先度はProvenance Basicの正確性、対応ツール、導入容易性、privacy、overhead、監査可能性を最優先とします。
+
+## Historical / experimental code
+
+リポジトリには、Provenance専用へ方針転換する前に作成したDelivery / ROI / Collector / Relayの実験コード・文書が一部残っています。これらは**現行Taviq Basicの導入経路ではありません**。
+
+現行の正本は README、[Basic setup](docs/basic.md)、[Deployment Modes](docs/deployment-modes.md)、[Provenance Trust Model](docs/verified-provenance.md)、[Roadmap](docs/ROADMAP.md) です。
