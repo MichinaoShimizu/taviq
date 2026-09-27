@@ -59,3 +59,28 @@ func TestDoctorCoreDoesNotRequireGitHubActions(t *testing.T) {
 	checks:=x["checks"].(map[string]bool)
 	if checks["github_pr_summary"]{t.Fatal("GitHub Actions must remain optional")}
 }
+\n
+func TestObserveAccumulatesOnSameHeadAndResetsOnNewHead(t *testing.T) {
+	dir:=t.TempDir()
+	if err:=exec.Command("git","init",dir).Run();err!=nil{t.Fatal(err)}
+	old,_:=os.Getwd();defer os.Chdir(old);os.Chdir(dir)
+	exec.Command("git","config","user.email","test@example.com").Run()
+	exec.Command("git","config","user.name","Taviq Test").Run()
+	os.WriteFile("a",[]byte("a"),0644);exec.Command("git","add","a").Run();exec.Command("git","commit","-m","a").Run()
+
+	if err:=observe("claude","agent","sonnet");err!=nil{t.Fatal(err)}
+	if err:=observe("codex","agent","gpt-x");err!=nil{t.Fatal(err)}
+	if err:=observe("claude","agent","sonnet");err!=nil{t.Fatal(err)}
+	b,_:=os.ReadFile(filepath.Join(dir,".taviq","runtime.json"))
+	var x Runtime;if err:=json.Unmarshal(b,&x);err!=nil{t.Fatal(err)}
+	if strings.Join(x.Tools,",")!="claude,codex"{t.Fatalf("tools=%v",x.Tools)}
+	if strings.Join(x.Models,",")!="gpt-x,sonnet"{t.Fatalf("models=%v",x.Models)}
+	oldHead:=x.BaseHead
+
+	os.WriteFile("b",[]byte("b"),0644);exec.Command("git","add","b").Run();exec.Command("git","commit","-m","b").Run()
+	if err:=observe("kiro","crew","");err!=nil{t.Fatal(err)}
+	b,_=os.ReadFile(filepath.Join(dir,".taviq","runtime.json"));json.Unmarshal(b,&x)
+	if x.BaseHead==oldHead{t.Fatal("expected new HEAD window")}
+	if strings.Join(x.Tools,",")!="kiro"{t.Fatalf("expected reset tools, got %v",x.Tools)}
+	if strings.Join(x.Modes,",")!="crew"{t.Fatalf("expected crew mode, got %v",x.Modes)}
+}
