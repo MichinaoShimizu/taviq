@@ -22,26 +22,22 @@ This configures the repository-local Git hook path to `.taviq/hooks`.
 
 ## AI execution metadata
 
-The agent/tool integration sets:
+Tool integrations accumulate observed metadata in `.taviq/runtime.json`.
 
-```bash
-TAVIQ_TOOL=claude
-TAVIQ_MODE=agent
-TAVIQ_MODEL=<optional model id>
-```
+Multiple tools, modes and models may be observed before one commit. Duplicate values are removed. Environment variables remain a backward-compatible fallback.
 
-Only `TAVIQ_TOOL` is required. If no tool is known, the hook writes nothing and the commit remains unknown.
-
-The resulting commit message contains only:
+The resulting commit message uses the v1 multi-value schema:
 
 ```text
 Taviq-Provenance: v1
-Taviq-Tool: claude
-Taviq-Mode: agent
-Taviq-Model: <only when known>
+Taviq-Tools: claude,codex
+Taviq-Modes: agent
+Taviq-Models: model-a,model-b
 ```
 
-The hook is idempotent and does not duplicate existing Taviq trailers. After a successful trailer write, the runtime accumulator is consumed so observations do not leak into the next commit.
+Only Tools are required. Modes and Models are optional and never guessed.
+
+The hook is idempotent and does not duplicate an existing Taviq provenance trailer.
 
 ## Privacy
 
