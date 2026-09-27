@@ -120,6 +120,7 @@ func TestObserveThenHookEndToEnd(t *testing.T) {
 		}
 	}
 }
+
 func TestMachineInstallUninstallIsIdempotent(t *testing.T) {
 	config := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
@@ -157,6 +158,7 @@ func TestMachineInstallUninstallIsIdempotent(t *testing.T) {
 		t.Fatal("expected Taviq config directory removed")
 	}
 }
+
 func TestRepositoryMarkerLifecycle(t *testing.T) {
 	dir := enterRepo(t)
 	enabled, err := repoEnabled()
