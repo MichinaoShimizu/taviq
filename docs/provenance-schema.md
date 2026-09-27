@@ -36,6 +36,8 @@ Runtime stores one deduplicated set of observations and nothing else. Each obser
 
 Runtime schema version 1 stored the four projections as parallel lists. A version 1 file left by an older Taviq is still read for the rest of its window: its lists are merged into the projections as they are, without inventing tool/model/role associations they did not record.
 
+Downgrading to an older Taviq in the middle of a window is not supported for the evidence already collected: an older binary does not read `observations`, so observations made before the downgrade are left out of that commit. The commit then records only what the older binary itself observed, or is Unknown. It never records evidence that was not observed.
+
 The sections below define the projected fields, which are what commit trailers carry.
 
 ### tools
