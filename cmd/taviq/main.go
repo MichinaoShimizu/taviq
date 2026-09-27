@@ -90,7 +90,7 @@ func diagnose() (map[string]any,error) {
 		"commit_writer":exists(filepath.Join(r,"scripts","taviq_prepare_commit_msg.py")),
 		"github_pr_summary":exists(filepath.Join(r,".github","workflows","taviq-basic.yml")),
 	}
-	core:=checks["hooks_path"]&&checks["prepare_commit_msg_hook"]&&checks["runtime_writer"]&&checks["commit_writer"]
+	core:=checks["hooks_path"]&&checks["prepare_commit_msg_hook"]
 	return map[string]any{"status":map[bool]string{true:"ready",false:"incomplete"}[core],"core_ready":core,"checks":checks},nil
 }
 
