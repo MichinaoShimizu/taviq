@@ -224,3 +224,33 @@ func TestRepositoryMarkerFailsClosedOnUnknownVersion(t *testing.T) {
 		t.Fatal("unknown marker version must not enable repository")
 	}
 }
+\n
+func TestHookIgnoresRepositoryWithoutMarker(t *testing.T) {
+	dir := enterRepo(t)
+	msg := filepath.Join(dir, "msg")
+	_ = os.WriteFile(msg, []byte("Change\n"), 0o644)
+	t.Setenv("TAVIQ_TOOL", "claude")
+	if err := hook(msg); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(msg)
+	if string(b) != "Change\n" {
+		t.Fatalf("unmarked repository must be untouched: %q", b)
+	}
+}
+
+func TestGlobalGitHookRefusesExistingOwner(t *testing.T) {
+	config := t.TempDir()
+	home := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", config)
+	t.Setenv("HOME", home)
+	_ = exec.Command("git", "config", "--global", "core.hooksPath", "/other/hooks").Run()
+	err := installGlobalGitHook()
+	if err == nil {
+		t.Fatal("expected existing global hooksPath conflict")
+	}
+	out, _ := exec.Command("git", "config", "--global", "--get", "core.hooksPath").Output()
+	if strings.TrimSpace(string(out)) != "/other/hooks" {
+		t.Fatal("existing global hooksPath must remain unchanged")
+	}
+}
