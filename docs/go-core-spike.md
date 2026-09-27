@@ -1,6 +1,6 @@
 # Go Core Spike Results
 
-Status: evaluation in progress.
+Status: distribution feasibility demonstrated; runtime parity still pending.
 
 ## CI measurement
 
@@ -51,3 +51,22 @@ Before adopting Go as Core:
 - compare maintenance complexity
 
 Do not remove Python until these checks pass.
+
+
+## Cross-platform distribution result
+
+All target builds succeeded in CI:
+
+| Target | Binary size |
+| --- | ---: |
+| Linux amd64 | 3,149,805 bytes |
+| Linux arm64 | 3,123,460 bytes |
+| macOS amd64 | 3,073,856 bytes |
+| macOS arm64 | 3,035,762 bytes |
+| Windows amd64 | 3,276,288 bytes |
+
+A Linux amd64 binary successfully executed `init → hook → doctor → deinit` in an external Git repository containing no Taviq source files.
+
+Latest measured hook latency: median 2.42 ms, p95 2.54 ms.
+
+This demonstrates the main distribution advantage of the Go approach: Taviq Core can operate as a roughly 3 MB self-contained binary.
