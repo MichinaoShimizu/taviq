@@ -1,0 +1,26 @@
+name: Taviq Basic Tests
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests -p 'test_*.py'
+      - name: Basic overhead benchmark
+        run: |
+          python3 scripts/benchmark_basic.py | tee /tmp/taviq-benchmark.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('/tmp/taviq-benchmark.json'))
+          assert r['passes']['hook_median'], r
+          assert r['passes']['metadata_size'], r
+          PY
