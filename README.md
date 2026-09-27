@@ -95,13 +95,29 @@ Taviqが将来分析用exportを提供することはあっても、プロダク
 
 ## 導入
 
+Taviq CoreはGo製の単一binaryです。Python runtimeは不要です。
+
+開発中の現時点ではGoからbuildできます。
+
 ```bash
-python3 scripts/install_basic.py
+go build -o taviq ./cmd/taviq
+install -m 0755 ./taviq ~/.local/bin/taviq
 ```
 
-repository-localのGit hookが設定されます。
+各repositoryでは:
 
-通常どおりAIツールで開発してcommitしてください。対応integrationが一時metadataを設定し、commit時に最小Trailerへ変換します。
+```bash
+taviq init
+taviq doctor
+```
+
+解除:
+
+```bash
+taviq deinit
+```
+
+GitHub ActionsはPR集約用のOptional integrationであり、commit provenance記録には不要です。
 
 ## 対応
 
@@ -186,14 +202,16 @@ Taviq Provenance + Cost         → 投資分析の入力
 
 変更前に [Architecture Decisions](docs/adr/README.md) と [Development Skill](.agents/skills/taviq-development/SKILL.md) を確認してください。
 
-PR前のローカルチェック:
+PR前の主なチェック:
 
 ```bash
+gofmt -w cmd/taviq
+go test ./cmd/taviq
 python3 scripts/lint_contract.py
-python3 -m compileall -q scripts tests
-python3 -m unittest discover -s tests -p 'test_*.py'
-python3 scripts/benchmark_basic.py
+python3 scripts/test_go_distribution_spike.py
 ```
+
+PythonはContract LintやGitHub PR集約など開発・integration補助にのみ使用し、Taviq Core runtimeの依存ではありません。
 
 ## 現在の方針
 
