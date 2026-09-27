@@ -1,111 +1,123 @@
 # TAVIQ
 
-**Engineering Intelligence for Decisions**
+**AI provenance for software development.**
 
-デリバリー · 品質 · AI · ROI
+Taviqは、**AIがどのソフトウェア変更に、どのように関与したかを自動で残すためのProvenance Layer**です。
 
-Taviqは、開発組織のデータを「数値 → 何を意味するか → なぜ重要か → 次に何を判断するか」へ変換し、経営層と開発組織の意思決定を支援するプロダクトです。
+Claude / Codex / Kiroなどを使った開発で、GitのHuman Authorだけでは分からない「変更がどう作られたか」を、commit / pull requestへ最小限の来歴として結び付けます。
 
-## レポートの考え方
+> Git records who committed the change.  
+> Taviq records how AI participated in the change.
 
-Taviqは、読み手の意思決定レベルに応じてレポートを3層に分けます。
+## なぜ必要か
 
-1. **経営層** — 投資、創出されたキャパシティ、デリバリー、品質、事業成果との接続、必要な経営判断。
-2. **開発組織長 / EM** — サイクルタイム、レビュー待ち、AI ROI、AI関与あり・なしの観測比較など。
-3. **診断詳細** — 上位指標が動いた理由を調べるための、リポジトリ別PR件数・サイズ・サイクル・レビュー指標。
+AI利用率、Token数、契約席数だけでは、AIが**どの実際の変更に関与したか**が分かりません。
 
-PR件数やレビュー待ち時間は診断材料であり、経営成果そのものとしては扱いません。
+一方、Gitには通常Human Authorは残りますが、
 
-経営層向けの各指標は、次の4点を必ず示します：
+- Claudeが関与したのか
+- Codexだったのか
+- Kiroだったのか
+- AssistなのかAgentなのか
+- AI関与を確認できない変更がどれだけあるのか
 
-`数値 → 何を意味する？ → なぜ重要？ → 次の判断`
+は残りません。
 
-AI reporting follows the same chain. Adoption, generated-code share, or token usage are not treated as business outcomes.
+このJoin Keyがなければ、将来Delivery・品質・コスト等とAI利用を結び付けようとしても、信頼できる分析の土台がありません。
 
-## What it measures
+Taviqはまず**分析する前の証拠を作ること**に集中します。
 
-- Delivery: PR throughput, merge cycle time, first-review wait, PR size, long review waits
-- Generative AI: net human time saved, capacity value, program cost, estimated ROI
-- AI delivery comparison: AI-involved vs non-AI changes with provenance coverage
-- Guardrails: metrics describe the delivery system, not individual performance; observational comparisons are not causal estimates
-
-## 設計原則
-
-Taviqが「何を言えるか」は、接続されたデータによって決まります。GitHubだけからAI ROIや事業成果を推測しません。
-
-単体データ・複数データの組み合わせ・AI価値の5段階・Evidence Level・不足データの扱いは [Data Capability Model](docs/data-capability-model.md) を正本とします。
-
-## なぜAI来歴が必要なのか
-
-AI利用率やToken数だけでは、AIが開発組織に価値を生んだかは分かりません。
-
-例えば「Claudeを80%の開発者が使っている」と分かっても、それだけでは次の問いには答えられません。
-
-- 開発は速くなったのか
-- Reviewや確認の負荷は減ったのか
-- 品質を維持できているのか
-- Claude / Codex / Kiroは、どの種類の仕事で違いがあるのか
-- 高価なモデルを使う価値はあるのか
-- AIへの投資を維持・拡大する判断材料はあるのか
-
-Taviqは、その分析の起点として **「どの変更に、どのAIツール・利用モードが関与したか」** という最小限の来歴をGitの変更へ結び付けます。
+## Taviqがやること
 
 ```text
-AI来歴
-  │
-  ├── Delivery
-  │     Cycle Time / Review Wait / Work Flow
-  │
-  ├── Quality
-  │     CI / Failure / Incident
-  │
-  ├── Human Effort
-  │     確認 / 修正 / Rework
-  │
-  └── Cost
-        Token / Credit / 実費
-             │
-             ▼
-      Investment Decision
+Claude / Codex / Kiro
+        │
+        │ workspace hook / integration
+        ▼
+minimal runtime metadata
+        │
+        │ prepare-commit-msg
+        ▼
+Git commit
+  Taviq-Provenance: v1
+  Taviq-Tool: claude
+  Taviq-Mode: agent
+  Taviq-Model: <optional>
+        │
+        ▼
+GitHub Actions
+        │
+        ▼
+Pull Request
+
+AI provenance coverage  80%
+Confirmed               4 / 5 commits
+Unknown                 1 commit
+Tools                   Claude, Codex
 ```
 
-来歴そのものは生産性やROIを意味しません。**AI来歴は、AI利用と仕事の結果を正しく結び付けるためのJoin Key**です。
+**UnknownはHuman-onlyではありません。** 証拠がなければUnknownのまま扱います。
 
-接続するデータが増えると、Taviqは段階的に次の問いを扱えるようになります。
+## Taviqがやらないこと
 
-| 段階 | 分かるようになること |
+Taviqはprovenanceだけから、次を断定しません。
+
+- AIで生産性が上がった
+- AIで何時間削減できた
+- AI ROIが高い
+- 品質が改善した
+- AIがDelivery改善の原因だった
+- 個人Aは個人Bより生産的
+
+Provenanceは「AI関与の証拠」であり、「AIが価値を生んだ証拠」ではありません。
+
+## TaviqとKPI Playbookの責務
+
+役割を明確に分けます。
+
+**Taviq — 証拠を作る**
+
+- AI tool / mode / model（取得できる場合）
+- commit / PRとのcorrelation
+- provenance coverage
+- confirmed / unknown
+- privacy-consciousな記録
+
+**KPI Playbook — 証拠を読む**
+
+- Delivery / Qualityとの組み合わせ
+- KPI / counter metricの設計
+- AI生産性の測定条件
+- ROIや投資判断
+- 因果と観測の区別
+
+Taviqが将来分析用exportを提供することはあっても、プロダクトの中心責務はProvenanceです。
+
+## 導入
+
+```bash
+python3 scripts/install_basic.py
+```
+
+repository-localのGit hookが設定されます。
+
+通常どおりAIツールで開発してcommitしてください。対応integrationが一時metadataを設定し、commit時に最小Trailerへ変換します。
+
+## 対応
+
+| Tool | Integration |
 | --- | --- |
-| AI来歴 + Git | AI関与が確認された変更は、どのようなDelivery傾向か |
-| + CI / Quality | 速さの違いが品質悪化を伴っていないか |
-| + Human Effort | 指示・確認・修正まで含めて仕事全体が軽くなったか |
-| + AI Cost | 時間価値、損益分岐、ROI試算 |
-| + Product / Business | 創出したキャパシティが顧客・事業成果へ使われたか |
+| Claude Code | workspace SessionStart hook |
+| Codex | workspace/plugin SessionStart hook + Skill fallback |
+| Kiro | workspace Agent Spawn hook |
 
-Taviqが目指すのは、**「AIを使っているか」の計測から、「どのAI投資が、どの仕事で、どの条件なら価値を生むのか」の判断へ進めること**です。
-
-そのため、Basicではまず低負荷・低リスクなAI来歴を正確に残し、必要になった組織だけが追加データを接続します。
+Modelは任意です。確実に取得できない場合は推測しません。
 
 ## Zero-AI-overhead by design
 
-Taviq Basicは、AI利用を測定するために追加のAI利用を発生させないことを設計原則とします。
+来歴記録のために追加のLLM推論を行いません。
 
-来歴記録のためにLLMへ質問したり、コードをAIで再解析したりしません。通常経路は、tool hookが最小metadataを書き、Git hookとGitHub Actionsが決定的な処理で集計するだけです。
-
-```text
-AI session
-   ↓
-tool hook
-   ↓
-数十〜数百byteのruntime metadata
-   ↓
-Git commit trailer
-   ↓
-GitHub Actions aggregation
-```
-
-### Basicの目標
-
-| Overhead | 目標 |
+| Overhead | Basicの設計 |
 | --- | ---: |
 | 追加AI API call | **0** |
 | 追加AI token | **0** |
@@ -114,78 +126,11 @@ GitHub Actions aggregation
 | Local hook latency | **50ms未満を目標** |
 | Git metadata | **1KB未満 / commitを目標** |
 
-実測していない性能値を達成済みとは表現しません。Latencyやmetadata sizeはdogfood時に測定し、目標を満たしているか確認します。
+Latency等は環境依存なのでCI / dogfoodで継続測定します。
 
-Skillは通常の計測経路ではなくfallback / setup / measurement guardrailとして扱います。Basicの通常経路は **Hook > Skill** とし、来歴記録のためだけにAgentの推論やcontext消費を増やさない設計にします。
+## Privacy
 
-Taviq自身のオーバーヘッドも測定対象です。AI開発の生産性を測るための仕組みが、開発生産性やAIコストを悪化させないことを継続的に確認します。
-
-## AI来歴（Provenance）
-
-Taviq Basicは、Claude / Codex / Kiroを使った開発の来歴を、サーバーなしでGitHubへ残せるようにします。
-
-目的は「誰がAIを多く使ったか」を監視することではありません。**どの変更に、どのAIツール・利用モードの関与が明示的に確認できたか**を記録し、後からDelivery・品質・AI投資分析へ接続できる証拠を作ります。
-
-### Basicアーキテクチャ
-
-```text
-Claude / Codex / Kiro
-        │
-        │ workspace hook / skill
-        ▼
-.taviq/runtime.json
-  tool / mode / model(optional)
-        │
-        │ prepare-commit-msg
-        ▼
-Git commit
-  Taviq-Provenance: v1
-  Taviq-Tool: claude
-  Taviq-Mode: agent
-  Taviq-Model: <取得できた場合のみ>
-        │
-        ▼
-GitHub
-        │
-        ▼
-GitHub Actions
-        │
-        ▼
-PR Provenance Summary
-
-Coverage 80%
-Confirmed 4 / 5 commits
-Unknown 1 commit
-Tools: Claude, Codex
-```
-
-Taviqは、証拠がないcommitを「人間だけで作った」とは判定しません。**UnknownはUnknownのまま扱います。**
-
-### 導入
-
-リポジトリで次を実行します。
-
-```bash
-python3 scripts/install_basic.py
-```
-
-これによりrepository-localの `prepare-commit-msg` hookが設定されます。
-
-その後は通常どおりClaude / Codex / Kiroで開発してcommitします。対応workspace integrationがAI tool情報を一時的な `.taviq/runtime.json` へ記録し、Git hookが最小限のcommit trailerへ変換します。
-
-`.taviq/runtime.json` はGit管理対象外です。
-
-### 対応
-
-| Tool | Basic integration |
-| --- | --- |
-| Claude Code | workspace SessionStart hook |
-| Codex | workspace/plugin SessionStart hook + Skill fallback |
-| Kiro | workspace Agent Spawn hook |
-
-ModelはBasicの必須項目ではありません。公式に確実に取得できる場合だけ記録し、推測しません。
-
-### Gitに残すもの
+Gitに残すのは低機密な最小metadataだけです。
 
 ```text
 Taviq-Provenance: v1
@@ -194,68 +139,48 @@ Taviq-Mode: agent
 Taviq-Model: <optional>
 ```
 
-### Gitに残さないもの
+デフォルトでは以下をGitへ残しません。
 
 - Prompt / AI Response
-- ソースコード本文 / Diff本文
+- Source / Diff本文
 - Token / Credit
-- AI利用コスト
+- Cost
 - Chat履歴
-- 人の作業時間
-- 個人の生産性スコアやランキング
+- Human effort
+- 個人生産性スコア
 
-Basicは「AI関与の来歴」を記録する機能です。来歴だけから「AIで生産性が上がった」「ROIが高い」「品質が改善した」とは判断しません。
+## 何ができるようになるか
 
-### BasicとAdvanced
+Taviq単体:
 
-**Basic（標準）**
+- PR/commitにAI関与の明示的な来歴を残す
+- Claude / Codex / Kiro等のtoolを識別
+- Agent等のmodeを識別
+- provenance coverageを把握
+- AI関与を確認できない変更をUnknownとして把握
+- 将来の監査・ガバナンス・分析に使えるJoin Keyを作る
 
-`Skill / Hook → Git trailer → GitHub Actions`
+他データと組み合わせる場合:
 
-サーバー不要。AI関与の明示的な来歴とcoverageを扱います。
+```text
+Taviq Provenance + Git/CI       → AI関与変更のDelivery/検証傾向
+Taviq Provenance + Quality      → AI関与変更の品質傾向
+Taviq Provenance + Human Effort → 確認・修正負荷
+Taviq Provenance + Cost         → 投資分析の入力
+```
 
-**Advanced（任意・Basic完成まで開発凍結）**
+これらの組み合わせから因果を自動的に断定しません。
 
-Local/Cloud Collector、usage、cost、Self-hosted/Cloud transport等を追加し、AI Engineering Economicsなどの高度な判断材料を扱います。
-
-BasicだけでAdvancedを要求しません。
-
-### 詳細仕様
+## 設計ドキュメント
 
 - [Basic setup](docs/basic.md)
-- [Data Capability Model](docs/data-capability-model.md)
 - [AI Provenance & Storage Architecture](docs/ai-provenance-storage.md)
+- [Data Capability Model](docs/data-capability-model.md)
 - [Deployment Modes](docs/deployment-modes.md)
 - [Implementation Roadmap](docs/ROADMAP.md)
 
-## Quick start
+## 現在の方針
 
-Export pull requests with GitHub CLI:
+Taviqは当面、**AI Engineering Provenance Layer** に集中します。
 
-```bash
-gh pr list --repo owner/repository --state all --limit 1000 \
-  --json createdAt,mergedAt,additions,deletions,reviews \
-  > /tmp/prs.json
-```
-
-Generate a report:
-
-```bash
-python3 taviq.py \
-  --input /tmp/prs.json --repo owner/repository \
-  --since 2026-08-01 --until 2026-09-01 \
-  --format html --output /tmp/taviq-report.html
-```
-
-For multiple repositories, repeat `--input` and `--repo`. Add `--ai-input samples/ai-roi-input.json` to include the AI investment section.
-
-## Samples
-
-- `samples/engineering-delivery-review.md`
-- `samples/generative-ai-investment-review.md`
-
-Sample report numbers are synthetic and exist only to demonstrate the deliverable.
-
-## Method
-
-Metric definitions and interpretation principles are developed separately in `kpi-playbook`. Taviq is the product implementation: data in, engineering intelligence out.
+過去に作成したDelivery / ROI / executive reportingの実験コードやサンプルは、Provenanceの将来的な利用可能性を検証したものです。今後の新規開発優先度はProvenance Basicの正確性、対応ツール、導入容易性、privacy、overhead、監査可能性を最優先とします。
