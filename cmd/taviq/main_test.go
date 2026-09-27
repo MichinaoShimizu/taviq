@@ -289,3 +289,24 @@ func TestMachineInstallOwnsIntegrationAdapters(t *testing.T) {
 		t.Fatal("integration adapter directory must be removed")
 	}
 }
+
+func TestKiroCrewAdapterUsesCrewMode(t *testing.T) {
+	config := t.TempDir()
+	home := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", config)
+	t.Setenv("HOME", home)
+	if err := machineInstall(); err != nil {
+		t.Fatal(err)
+	}
+	dir, err := integrationsDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "kiro-crew"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), "taviq observe kiro crew") {
+		t.Fatalf("unexpected Kiro Crew adapter: %s", b)
+	}
+}

@@ -52,9 +52,10 @@ func installIntegrationAdapters() error {
 		return err
 	}
 	adapters := map[string]string{
-		"claude": "#!/bin/sh\nexec taviq observe claude agent\n",
-		"codex":  "#!/bin/sh\nexec taviq observe codex agent\n",
-		"kiro":   "#!/bin/sh\nexec taviq observe kiro agent\n",
+		"claude":    "#!/bin/sh\nexec taviq observe claude agent\n",
+		"codex":     "#!/bin/sh\nexec taviq observe codex agent\n",
+		"kiro":      "#!/bin/sh\nexec taviq observe kiro agent\n",
+		"kiro-crew": "#!/bin/sh\nexec taviq observe kiro crew\n",
 	}
 	for name, body := range adapters {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o755); err != nil {
@@ -69,7 +70,7 @@ func uninstallIntegrationAdapters() error {
 	if err != nil {
 		return err
 	}
-	for _, name := range []string{"claude", "codex", "kiro"} {
+	for _, name := range []string{"claude", "codex", "kiro", "kiro-crew"} {
 		_ = os.Remove(filepath.Join(dir, name))
 	}
 	_ = os.Remove(dir)
