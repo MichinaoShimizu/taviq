@@ -40,7 +40,7 @@ func machineInstall() error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 	state := MachineState{SchemaVersion: 1, Installed: true}
@@ -48,7 +48,7 @@ func machineInstall() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "state.json"), b, 0644)
+	return os.WriteFile(filepath.Join(dir, "state.json"), b, 0o644)
 }
 
 func machineUninstall() error {
