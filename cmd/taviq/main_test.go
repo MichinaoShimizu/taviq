@@ -289,7 +289,7 @@ func TestMachineInstallOwnsIntegrationAdapters(t *testing.T) {
 		t.Fatal("integration adapter directory must be removed")
 	}
 }
-\n
+
 func TestKiroCrewAdapterUsesCrewMode(t *testing.T) {
 	config := t.TempDir()
 	home := t.TempDir()
