@@ -15,7 +15,7 @@ doctor=load("taviq_doctor","doctor.py")
 def main():
     p=argparse.ArgumentParser(prog="taviq",description="AI engineering provenance")
     sub=p.add_subparsers(dest="command",required=True)
-    for name in ("install","uninstall","doctor"):
+    for name in ("init","deinit","install","uninstall","doctor"):
         q=sub.add_parser(name)
         q.add_argument("--repo",type=Path,default=Path("."))
         if name=="doctor": q.add_argument("--json",action="store_true")
