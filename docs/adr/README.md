@@ -76,3 +76,12 @@ Organization reporting should default to repository / commit / PR evidence bound
 Commit provenance recording is Core functionality.
 
 GitHub Actions, reusable workflows, Apps and Rulesets are optional integration/distribution mechanisms. Their absence must not prevent local Git provenance recording.
+
+
+## ADR-012 — Hook execution location must not define provenance semantics
+
+v0.1 may execute the commit hook from repository-local code.
+
+Organization-ready distribution should move execution to a machine-installed or organization-managed Taviq CLI so repositories do not contain duplicated implementation.
+
+Changing runner location must not silently change provenance schema or field semantics.
