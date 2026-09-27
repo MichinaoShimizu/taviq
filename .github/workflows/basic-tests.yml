@@ -8,7 +8,8 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  quality-gate:
+    name: Taviq Quality Gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
