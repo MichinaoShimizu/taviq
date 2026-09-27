@@ -236,7 +236,7 @@ func machineInstall() error {
 	if err := installIntegrationAdapters(); err != nil {
 		return err
 	}
-	return installClaudeCodeIntegration()
+	return installAgentHooks()
 }
 
 func machineUninstall() error {
@@ -250,7 +250,7 @@ func machineUninstall() error {
 	if err := uninstallIntegrationAdapters(); err != nil {
 		return err
 	}
-	if err := uninstallClaudeCodeIntegration(); err != nil {
+	if err := uninstallAgentHooks(); err != nil {
 		return err
 	}
 	_ = os.Remove(filepath.Join(dir, "state.json"))
@@ -466,7 +466,9 @@ func diagnose() (map[string]any, error) {
 		"machine_hook":             exists(filepath.Join(hooksDir, "prepare-commit-msg")),
 		"no_repository_hooks_path": strings.TrimSpace(string(localOut)) == "",
 		"github_pr_summary":        false,
-		"claude_code_hook":         claudeCodeIntegrationInstalled(),
+	}
+	for _, i := range agentHookIntegrations {
+		checks[i.name] = i.installed()
 	}
 	if r, err := root(); err == nil {
 		checks["github_pr_summary"] = exists(filepath.Join(r, ".github", "workflows", "taviq-basic.yml"))
@@ -532,11 +534,15 @@ func main() {
 		}
 	case "hook":
 		if len(os.Args) == 3 && os.Args[2] == "claude-code" {
-			claudeCodeHook(os.Stdin)
+			agentHook(os.Stdin, "claude", false)
+			return
+		}
+		if len(os.Args) == 3 && os.Args[2] == "codex" {
+			agentHook(os.Stdin, "codex", true)
 			return
 		}
 		if len(os.Args) != 4 || os.Args[2] != "prepare-commit-msg" {
-			fail(fmt.Errorf("usage: taviq hook <prepare-commit-msg <message-file>|claude-code>"))
+			fail(fmt.Errorf("usage: taviq hook <prepare-commit-msg <message-file>|claude-code|codex>"))
 		}
 		if err := hook(os.Args[3]); err != nil {
 			fail(err)

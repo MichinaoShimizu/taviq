@@ -12,8 +12,8 @@ Taviq = **AI Engineering Provenance Layer**.
 - [x] Minimal commit trailer
 - [x] GitHub Actions PR summary
 - [x] Claude workspace hook
-- [x] Codex workspace/plugin hook + Skill fallback
-- [x] Kiro workspace hook
+- [x] Codex workspace/plugin hook + Skill fallback (superseded by machine-level hook)
+- [x] Kiro workspace hook (removed; machine-level wiring pending)
 - [x] Unknown != human-only
 - [x] Model optional / never guessed
 - [x] Prompt / source / token / costをGitへ保存しない
@@ -135,9 +135,9 @@ KPI設計・Delivery/Quality/ROIの読み方はKPI Playbook側の責務として
 - [x] Claude machine-owned adapter (`taviq-claude`)
 - [x] Claude tool configuration wiring
 - [x] Codex machine-owned adapter (`taviq-codex`)
-- [ ] Codex tool configuration wiring
+- [x] Codex tool configuration wiring
 - [x] Kiro machine-owned adapter (`taviq-kiro`)
-- [ ] Kiro tool configuration wiring
+- [ ] Kiro tool configuration wiring (blocked: hook trigger names inconsistent across Kiro docs)
 - [x] integrations call `taviq observe`
 - [x] preserve existing user tool configuration
 - [x] safe uninstall of only Taviq-owned configuration

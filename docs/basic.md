@@ -77,8 +77,8 @@ Basic records only explicit commit provenance. It does not calculate AI ROI, hum
 | Tool | Automatic Basic metadata | Model |
 | --- | --- | --- |
 | Claude Code | machine-level `PreToolUse` hook installed by `taviq install` | not recorded |
-| Codex | workspace/plugin SessionStart hook; Skill remains a fallback | optional; never guessed |
-| Kiro | workspace Agent Spawn hook | optional; never guessed |
+| Codex | machine-level `PreToolUse` hook installed by `taviq install` (trusted once via `/hooks`) | recorded when Codex supplies it |
+| Kiro | not wired yet; `taviq observe kiro <mode>` adapter only | optional; never guessed |
 
 Basic v0.1 requires tool provenance, not model provenance. Model is enrichment only. Multiple tools/models in one commit represent observed presence, not contribution percentages or chronological order. See [Provenance Schema](provenance-schema.md).
 
