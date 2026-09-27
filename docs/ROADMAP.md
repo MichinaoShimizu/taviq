@@ -18,7 +18,7 @@ Taviq = **AI Engineering Provenance Layer**.
 - [x] Model optional / never guessed
 - [x] Prompt / source / token / costをGitへ保存しない
 - [x] Zero-AI-overhead benchmark / CI guard
-- [ ] 実Claude Codeでhook発火をdogfood
+- [x] 実Claude Codeでhook発火をdogfood
 - [ ] 実Codexでhook発火をdogfood
 - [ ] 実Kiroでhook発火をdogfood
 - [ ] 実PRでend-to-end確認

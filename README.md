@@ -62,7 +62,7 @@ Git integrationとAI adapterはmachine-levelです。RepositoryにはTaviq実装
 
 | Tool | Provenance |
 | --- | --- |
-| Claude Code | tool / mode（`taviq install`で自動設定） |
+| Claude Code | tool / mode / model（`taviq install`で自動設定） |
 | Codex | tool / mode / model（`taviq install`で自動設定、初回のみ`/hooks`で承認） |
 | Kiro | tool / mode（adapterのみ、自動設定は未対応） |
 | Kiro Crew | tool=kiro / mode=crew（adapterのみ） |
@@ -81,6 +81,8 @@ Commit provenanceには低機密な最小metadataだけを残します。
 - chat履歴
 - developer identity
 - productivity score
+
+Claude Codeのmodelは、Claude Codeがlocalに書くtranscriptから`model`だけを読み取ります。transcriptの他の内容は保存しません。
 
 ## Design
 
