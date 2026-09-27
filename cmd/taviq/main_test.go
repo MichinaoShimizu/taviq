@@ -199,6 +199,7 @@ func TestRepositoryMarkerFailsClosedOnUnknownVersion(t *testing.T) {
 		t.Fatal("unknown marker version must not enable repository")
 	}
 }
+
 func TestHookIgnoresRepositoryWithoutMarker(t *testing.T) {
 	dir := enterRepo(t)
 	msg := filepath.Join(dir, "msg")
@@ -228,7 +229,6 @@ func TestGlobalGitHookRefusesExistingOwner(t *testing.T) {
 		t.Fatal("existing global hooksPath must remain unchanged")
 	}
 }
-
 
 func TestMarkerOnlyInitCreatesNoRepositoryHook(t *testing.T) {
 	dir := enterRepo(t)
