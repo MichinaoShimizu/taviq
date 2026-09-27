@@ -6,6 +6,22 @@ Delivery · Quality · AI · ROI
 
 Taviq turns engineering delivery signals into decision-ready reports for engineering leaders and executives.
 
+## Report hierarchy
+
+Taviq separates the report by decision level:
+
+1. **Executives** — investment, released capacity, delivery outcome, quality guardrails, business connection, and the decision/question requiring attention.
+2. **Engineering leaders / EMs** — delivery-system signals such as cycle time, review latency, AI ROI, and AI/non-AI observational comparisons.
+3. **Diagnostic detail** — repository-level PR throughput, size, cycle, and review metrics used to investigate why the upper-level signal moved.
+
+PR counts and review latency are diagnostic inputs; they are not presented as the primary executive outcome.
+
+The intended value chain is:
+
+`Engineering investment → capacity → delivery → quality → business outcome`
+
+AI reporting follows the same chain. Adoption, generated-code share, or token usage are not treated as business outcomes.
+
 ## What it measures
 
 - Delivery: PR throughput, merge cycle time, first-review wait, PR size, long review waits
