@@ -36,10 +36,6 @@ def trailer_lines(runtime,env):
     if models: lines.append("Taviq-Models: "+",".join(models))
     return lines
 
-def clear_runtime():
-    p=runtime_path()
-    if p and p.exists(): p.unlink()
-
 def apply(path,env=os.environ):
     started=time.perf_counter()
     lines=trailer_lines(load_runtime(),env)
@@ -49,7 +45,6 @@ def apply(path,env=os.environ):
     trailer="\n".join(lines)+"\n"
     suffix="\n" if text.endswith("\n") else "\n\n"
     p.write_text(text+suffix+trailer)
-    clear_runtime()
     return {"applied":True,"elapsed_ms":(time.perf_counter()-started)*1000,"metadata_bytes":len(trailer.encode("utf-8"))}
 
 if __name__=="__main__":
