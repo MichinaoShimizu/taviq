@@ -173,7 +173,7 @@ Taviq Provenance + Cost         → 投資分析の入力
 
 ## 設計ドキュメント
 
-- [Basic setup](docs/basic.md)
+- [Basic setup](docs/basic.md)\n- [Provenance Schema & Semantics](docs/provenance-schema.md)
 - [Provenance Trust Model](docs/verified-provenance.md)
 - [Data Capability Model](docs/data-capability-model.md)
 - [Deployment Modes](docs/deployment-modes.md)
