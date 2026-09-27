@@ -20,7 +20,7 @@ jobs:
         run: python3 scripts/lint_contract.py
       - name: Python compile check
         run: python3 -m compileall -q scripts tests
-      - name: Unit tests
+      - name: Go spike tests\n        run: go test ./cmd/taviq\n      - name: Unit tests
         run: python3 -m unittest discover -s tests -p 'test_*.py'
       - name: Basic overhead benchmark
         run: |
