@@ -52,3 +52,20 @@ Artifacts are transport, not the analytics database. Configure the shortest prac
 An artifact proves only that a Taviq producer emitted an envelope. Later phases should add signing/attestation so the aggregator can distinguish trusted collectors from arbitrary files.
 
 Until signing is implemented, UI must label artifact-derived provenance as collector evidence, not cryptographically verified evidence.
+
+
+## GitHub artifact transport decision
+
+GitHub Actions artifacts are produced by workflow runs. GitHub's public Actions artifact REST endpoints support listing, retrieving, downloading and deleting artifacts, but are not a general external-client upload API.
+
+Triggering a workflow externally through workflow_dispatch is possible, but requires Actions write permission. Taviq does not require that permission from the local collector merely to move provenance metadata.
+
+Therefore:
+
+- Local Collector does **not** dispatch GitHub workflows.
+- Local Collector does **not** request Actions write permission.
+- GitHub artifact transport is not the primary Local → GitHub handoff.
+- The next transport implementation is a local/self-hosted relay with an explicit endpoint and narrow write-only ingestion contract.
+- GitHub Actions remains a read/aggregation/presentation layer once evidence is available to it through an approved integration.
+
+This preserves least privilege and keeps transport replaceable.
