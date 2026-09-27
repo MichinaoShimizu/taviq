@@ -187,27 +187,34 @@ The same principle applies to multiple modes and models.
 
 ## 4. Time/window semantics
 
-Basic uses a repository-local **accumulation window**.
+Basic uses a repository-local accumulation window bounded by the Git `HEAD` observed by tool integrations.
 
-Tool integrations add observations to the current window. Switching from Claude to Codex or Kiro does not reset it; this is required to preserve multi-tool provenance.
+Runtime stores `base_head` together with observed tools/modes/models.
 
-The window is not a guaranteed task, session, commit, or file boundary.
+- When another tool is observed and `HEAD` is unchanged, Taviq accumulates it into the same window.
+- When a successful commit changes `HEAD`, the next tool observation detects the new `HEAD` and starts a fresh window.
+- If a commit attempt fails, `HEAD` does not change, so the evidence is retained.
+- Switching Claude → Codex → Kiro without a commit does not reset the window.
 
-Taviq does not automatically clear runtime from `prepare-commit-msg`, because Git may reject the commit after that hook and evidence would be lost.
-
-Runtime can be explicitly cleared with:
+Runtime can also be explicitly cleared with:
 
 ```bash
 python3 scripts/set_runtime.py --clear
 ```
 
-Until a stronger lifecycle boundary is available, a commit record means:
+This is still an implementation boundary, not proof that every observed tool contributed to every file or line in the resulting commit.
 
-> Taviq observed these tools/modes/models in the repository-local accumulation window that existed when the commit trailer was prepared.
+A v1 commit record means:
 
-It does not prove that every recorded tool contributed to that exact commit or every file in it.
+> Taviq observed these tools/modes/models while the repository remained at the recorded pre-commit HEAD, before the trailer was prepared.
 
-This limitation must remain visible in Basic v1 semantics. A future stronger session/commit correlation mechanism must use new fields or a schema version rather than silently strengthening the meaning of v1.
+### Known limitations
+
+- An external/manual commit that changes HEAD before another tool observation will cause the next observation to open a new window.
+- Amend/rebase/reset operations can change HEAD without representing a simple new-work boundary.
+- Multiple commits created without another AI-tool observation cannot be individually attributed from runtime state.
+
+Stronger task/file/session correlation must use new fields or a schema version rather than silently strengthening v1 semantics.
 
 ## 5. Privacy boundary
 
