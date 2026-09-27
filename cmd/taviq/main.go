@@ -553,7 +553,7 @@ func fail(err error) {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage: taviq <install|uninstall|init|deinit|doctor|observe|hook|version>")
+		fmt.Println("usage: taviq <install|uninstall|init|deinit|doctor|validate|observe|hook|version>")
 		return
 	}
 
@@ -584,6 +584,24 @@ func main() {
 		b, _ := json.MarshalIndent(x, "", "  ")
 		fmt.Println(string(b))
 		if !x["core_ready"].(bool) {
+			os.Exit(1)
+		}
+	case "validate":
+		if len(os.Args) > 3 {
+			fail(fmt.Errorf("usage: taviq validate [<commit>|<range>]"))
+		}
+		rev := "HEAD"
+		if len(os.Args) == 3 {
+			rev = os.Args[2]
+		}
+		results, err := validateCommits(rev)
+		if err != nil {
+			fail(err)
+		}
+		x := validationReport(results)
+		b, _ := json.MarshalIndent(x, "", "  ")
+		fmt.Println(string(b))
+		if x["summary"].(map[string]int)["invalid"] > 0 {
 			os.Exit(1)
 		}
 	case "observe":
