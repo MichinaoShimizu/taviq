@@ -31,7 +31,10 @@ Taviq = **AI Engineering Provenance Layer**.
 - [ ] commit trailer validation
 - [ ] tool / mode taxonomyを安定化
 - [ ] provenance coverage semanticsを固定
-- [x] provenance spoofing / trust model\n- [x] BasicはZero-secret / Recorded-or-Unknownに固定\n- [x] 独自HMAC/signing systemを採用しない\n- [ ] 標準的なsupply-chain attestation/signing方式を必要性から評価
+- [x] provenance spoofing / trust model
+- [x] BasicはZero-secret / Recorded-or-Unknownに固定
+- [x] 独自HMAC/signing systemを採用しない
+- [ ] 標準的なsupply-chain attestation/signing方式を必要性から評価
 - [x] spoofing / tampering threat model
 - [ ] monorepo / worktree / squash merge対応
 - [ ] merge commit / rebase対応

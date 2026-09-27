@@ -3,16 +3,23 @@ on:
   pull_request:
   push:
     branches: [main]
+
 permissions:
   contents: read
+
 jobs:
-  test:
+  quality-gate:
+    name: Taviq Quality Gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Taviq contract lint
+        run: python3 scripts/lint_contract.py
+      - name: Python compile check
+        run: python3 -m compileall -q scripts tests
       - name: Unit tests
         run: python3 -m unittest discover -s tests -p 'test_*.py'
       - name: Basic overhead benchmark
