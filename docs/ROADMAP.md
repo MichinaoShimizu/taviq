@@ -25,7 +25,19 @@ Taviq = **AI Engineering Provenance Layer**.
 - [x] reversible install / uninstall UX
 - [ ] Basic v0.1 release
 
-## v0.2 — Provenance quality
+## v0.2 — Organization-ready provenance
+
+- [ ] global Taviq CLI: install once per developer machine
+- [ ] `taviq init / deinit / doctor` repository UX
+- [ ] organization policy schema
+- [ ] repository opt-in / policy discovery
+- [ ] GitHub reusable workflow for centralized PR aggregation
+- [ ] organization rollout without copying Taviq implementation into every repository
+- [ ] organization privacy / governance defaults
+- [ ] repository / PR / commit level reporting boundaries
+- [ ] organization policy compatibility / version handling
+
+## v0.2.x — Provenance quality
 
 - [ ] provenance schema versioning
 - [ ] commit trailer validation
@@ -41,7 +53,16 @@ Taviq = **AI Engineering Provenance Layer**.
 - [ ] bot / cloud agent provenance
 - [ ] Web / Mobile → Cloud Agent provenance
 
-## v0.3 — Adoption
+## v0.3 — Zero-touch organization adoption
+
+- [ ] GitHub App / Ruleset based rollout evaluation
+- [ ] organization-wide enable / disable controls
+- [ ] centralized policy distribution
+- [ ] fleet-wide `doctor` / adoption visibility without developer productivity scoring
+- [ ] reusable workflow / App upgrade strategy
+- [ ] GitLab / other Git forge distribution model
+
+## Adoption follow-ups
 
 - [ ] one-command install
 - [ ] organization-wide rollout
