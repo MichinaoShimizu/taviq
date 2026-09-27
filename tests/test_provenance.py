@@ -55,6 +55,15 @@ class ProvenanceTests(unittest.TestCase):
         self.assertEqual(e["path_encoding"],"sha256")
         self.assertNotEqual(e["observed_files"][0],"src/a.py")
 
+    def test_queue_envelope_writes_only_minimal_payload(self):
+        with tempfile.TemporaryDirectory() as d:
+            state={"session_id":"s1","repository":"r","observed_files":["a.py"],"usage":{"input_tokens":99},"cost":12}
+            p=M.queue_envelope(state,Path(d))
+            e=json.loads(p.read_text())
+            self.assertEqual(e["kind"],"taviq-provenance-envelope")
+            self.assertNotIn("usage",e); self.assertNotIn("cost",e)
+            self.assertEqual(len(M.list_outbox(Path(d))),1)
+
     def test_event_store_is_jsonl(self):
         with tempfile.TemporaryDirectory() as d:
             event={"schema_version":1,"event":{"id":"x"}}
