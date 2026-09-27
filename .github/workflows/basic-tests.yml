@@ -27,6 +27,8 @@ jobs:
         run: go test ./cmd/taviq
       - name: Go spike benchmark
         run: python3 scripts/benchmark_go_spike.py
+      - name: Go distribution spike
+        run: python3 scripts/test_go_distribution_spike.py
       - name: Unit tests
         run: python3 -m unittest discover -s tests -p 'test_*.py'
       - name: Basic overhead benchmark
