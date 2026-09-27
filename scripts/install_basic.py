@@ -4,7 +4,10 @@ import subprocess
 from pathlib import Path
 
 HOOK = '''#!/bin/sh
-python3 "$(git rev-parse --show-toplevel)/scripts/taviq_prepare_commit_msg.py" "$1"
+if command -v taviq >/dev/null 2>&1; then
+  exec taviq hook prepare-commit-msg "$1"
+fi
+exec python3 "$(git rev-parse --show-toplevel)/scripts/taviq_prepare_commit_msg.py" "$1"
 '''
 
 def git(root, *args):
