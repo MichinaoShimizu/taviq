@@ -319,18 +319,25 @@ func exists(path string) bool {
 }
 
 func diagnose() (map[string]any, error) {
-	r, err := root()
+	enabled, err := repoEnabled()
 	if err != nil {
 		return nil, err
 	}
-	hooksOut, _ := exec.Command("git", "config", "--get", "core.hooksPath").Output()
-	checks := map[string]bool{
-		"git_repository":          true,
-		"hooks_path":              strings.TrimSpace(string(hooksOut)) == ".taviq/hooks",
-		"prepare_commit_msg_hook": exists(filepath.Join(r, ".taviq", "hooks", "prepare-commit-msg")),
-		"github_pr_summary":       exists(filepath.Join(r, ".github", "workflows", "taviq-basic.yml")),
+	hooksDir, err := globalHooksDir()
+	if err != nil {
+		return nil, err
 	}
-	core := checks["hooks_path"] && checks["prepare_commit_msg_hook"]
+	hooksOut, _ := exec.Command("git", "config", "--global", "--get", "core.hooksPath").Output()
+	checks := map[string]bool{
+		"repository_enabled": enabled,
+		"machine_hooks_path": strings.TrimSpace(string(hooksOut)) == hooksDir,
+		"machine_hook":       exists(filepath.Join(hooksDir, "prepare-commit-msg")),
+		"github_pr_summary":  false,
+	}
+	if r, err := root(); err == nil {
+		checks["github_pr_summary"] = exists(filepath.Join(r, ".github", "workflows", "taviq-basic.yml"))
+	}
+	core := checks["repository_enabled"] && checks["machine_hooks_path"] && checks["machine_hook"]
 	status := "incomplete"
 	if core {
 		status = "ready"
@@ -359,11 +366,11 @@ func main() {
 			fail(err)
 		}
 	case "init":
-		if err := initRepo(); err != nil {
+		if err := initMarker(); err != nil {
 			fail(err)
 		}
 	case "deinit":
-		if err := deinitRepo(); err != nil {
+		if err := deinitMarker(); err != nil {
 			fail(err)
 		}
 	case "doctor":
