@@ -178,7 +178,7 @@ Taviq Provenance + Cost         → 投資分析の入力
 - [Basic setup](docs/basic.md) — 導入方法とBasicの動作
 - [Provenance Schema & Semantics](docs/provenance-schema.md) — データ構造と各フィールドの意味
 - [Provenance Trust Model](docs/verified-provenance.md) — Recorded / Unknownと信頼境界
-- [Implementation Roadmap](docs/ROADMAP.md) — 現在地と今後の計画
+- [Implementation Roadmap](docs/ROADMAP.md) — 現在地と今後の計画\n- [Architecture Decisions](docs/adr/README.md) — 変更時に守る設計判断\n- [Development Skill](.agents/skills/taviq-development/SKILL.md) — AI Agent / contributor向け開発チェック
 
 ## 現在の方針
 
