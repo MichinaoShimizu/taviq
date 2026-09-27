@@ -52,8 +52,8 @@ func installIntegrationAdapters() error {
 		return err
 	}
 	adapters := map[string]string{
-		"claude": "#!/bin/sh\nexec taviq observe claude agent\n",
-		"codex":  "#!/bin/sh\nexec taviq observe codex agent\n",
+		"claude":    "#!/bin/sh\nexec taviq observe claude agent\n",
+		"codex":     "#!/bin/sh\nexec taviq observe codex agent\n",
 		"kiro":      "#!/bin/sh\nexec taviq observe kiro agent\n",
 		"kiro-crew": "#!/bin/sh\nexec taviq observe kiro crew\n",
 	}
