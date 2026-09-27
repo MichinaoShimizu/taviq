@@ -284,26 +284,113 @@ func uninstallAgentHooks() error {
 // whitespace or extra trailer lines into the commit message.
 var modelPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,127}$`)
 
+// agentEvent is the part of a PreToolUse event Taviq reads.
+type agentEvent struct {
+	Cwd            string `json:"cwd"`
+	Model          string `json:"model"`
+	TranscriptPath string `json:"transcript_path"`
+	ToolInput      struct {
+		FilePath     string `json:"file_path"`
+		NotebookPath string `json:"notebook_path"`
+	} `json:"tool_input"`
+}
+
+// eventModel returns the model the tool supplies in the event itself (Codex).
+func eventModel(event agentEvent) string { return event.Model }
+
+// transcriptTailBytes bounds how much of a transcript is read per event.
+const transcriptTailBytes = 256 << 10
+
+// transcriptModel returns the model of the most recent main-thread assistant
+// entry in the Claude Code transcript. Claude Code writes that model itself;
+// Taviq reads only this field and stores nothing else from the transcript.
+// Subagent (sidechain) entries and non-identifier values such as
+// "<synthetic>" are skipped.
+func transcriptModel(event agentEvent) string {
+	if !filepath.IsAbs(event.TranscriptPath) {
+		return ""
+	}
+	f, err := os.Open(event.TranscriptPath)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil || !info.Mode().IsRegular() {
+		return ""
+	}
+	offset := max(info.Size()-transcriptTailBytes, 0)
+	b := make([]byte, info.Size()-offset)
+	if _, err := f.ReadAt(b, offset); err != nil && err != io.EOF {
+		return ""
+	}
+	lines := bytes.Split(b, []byte("\n"))
+	if offset > 0 {
+		lines = lines[1:] // the first line may be cut
+	}
+	for i := len(lines) - 1; i >= 0; i-- {
+		var entry struct {
+			Type        string `json:"type"`
+			IsSidechain bool   `json:"isSidechain"`
+			Message     struct {
+				Model string `json:"model"`
+			} `json:"message"`
+		}
+		if json.Unmarshal(lines[i], &entry) != nil || entry.Type != "assistant" || entry.IsSidechain {
+			continue
+		}
+		if modelPattern.MatchString(entry.Message.Model) {
+			return entry.Message.Model
+		}
+	}
+	return ""
+}
+
+// eventDir returns the directory whose repository the event belongs to: the
+// nearest existing directory of the edited file when the tool names one,
+// otherwise the event cwd. A shell command is attributed to cwd; Taviq does
+// not parse commands to guess where they run.
+func eventDir(event agentEvent) string {
+	path := event.ToolInput.FilePath
+	if path == "" {
+		path = event.ToolInput.NotebookPath
+	}
+	if path == "" {
+		return event.Cwd
+	}
+	if !filepath.IsAbs(path) {
+		if event.Cwd == "" {
+			return ""
+		}
+		path = filepath.Join(event.Cwd, path)
+	}
+	for dir := filepath.Dir(path); ; dir = filepath.Dir(dir) {
+		if info, err := os.Stat(dir); err == nil && info.IsDir() {
+			return dir
+		}
+		if dir == filepath.Dir(dir) {
+			return event.Cwd
+		}
+	}
+}
+
 // agentHook handles a PreToolUse event from an AI tool. It never fails and
 // never prints: output or a non-zero exit from a PreToolUse hook would affect
 // the tool call the agent is about to make. Stdin is drained fully so the tool
 // never sees a broken pipe. The model is recorded only when the tool itself
-// supplies it in the event (trustModel); it is never guessed.
-func agentHook(stdin io.Reader, tool string, trustModel bool) {
+// supplies it (in the event or its own transcript); it is never guessed.
+func agentHook(stdin io.Reader, tool string, model func(agentEvent) string) {
 	b, _ := io.ReadAll(stdin)
-	var event struct {
-		Cwd   string `json:"cwd"`
-		Model string `json:"model"`
-	}
+	var event agentEvent
 	_ = json.Unmarshal(b, &event)
-	if event.Cwd != "" {
-		if err := os.Chdir(event.Cwd); err != nil {
+	if dir := eventDir(event); dir != "" {
+		if err := os.Chdir(dir); err != nil {
 			return
 		}
 	}
-	model := ""
-	if trustModel && modelPattern.MatchString(event.Model) {
-		model = event.Model
+	m := model(event)
+	if !modelPattern.MatchString(m) {
+		m = ""
 	}
-	_ = observe(tool, "agent", model)
+	_ = observe(tool, "agent", m)
 }

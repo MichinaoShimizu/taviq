@@ -34,8 +34,12 @@ Adapters must remain tiny, deterministic, secret-free, and reversible.
 Both files share the `{"hooks": {"PreToolUse": [{"matcher", "hooks": [...]}]}}` shape.
 
 - Only file edits and shell commands are matched. The shell hook runs before a `git commit` the agent makes itself, so a second commit in the same session is observed even after the first commit reset the observation.
-- `taviq hook <tool>` reads `cwd` from the event on stdin and records `<tool>` / `agent` there.
-- Model: Codex supplies `model` in the event, so it is recorded when it is a plain identifier (`[A-Za-z0-9._:/@+-]`, at most 128 characters); anything else is dropped. Claude Code events do not carry a model, so none is recorded.
+- `taviq hook <tool>` reads the event on stdin and records `<tool>` / `agent` in the repository the event belongs to:
+  - a file tool event (`tool_input.file_path`, or `tool_input.notebook_path`) belongs to the repository of the nearest existing directory of that file, so editing another repository than the session's working directory is observed there;
+  - any other event, including a shell command, belongs to the event `cwd`. Taviq does not parse shell commands, so `cd other-repo && git commit` is attributed to `cwd`, not to `other-repo`.
+- Model: recorded only when the tool itself supplies it, and only when it is a plain identifier (`[A-Za-z0-9._:/@+-]`, at most 128 characters); anything else is dropped.
+  - Codex supplies `model` in the event.
+  - Claude Code events do not carry a model. Taviq reads the transcript Claude Code writes locally (`transcript_path` in the event), from its last 256 KiB only, and takes `message.model` of the most recent main-thread assistant entry. Subagent (sidechain) entries and values such as `<synthetic>` are skipped. Only the model identifier is kept; nothing else from the transcript is stored. The model can lag by one turn right after a model switch, and models used only by subagents are not recorded.
 - The hook never prints and always exits 0, so it cannot block or alter a tool call. Outside an enabled repository it does nothing.
 - Install is skipped for a tool whose config directory does not exist, and fails visibly without writing when the file is not valid JSON or has an unexpected `hooks` shape.
 - Other settings and hooks are preserved. The file is rewritten atomically with its permissions kept; key order may change.

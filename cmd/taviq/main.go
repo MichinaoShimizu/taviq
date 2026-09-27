@@ -534,11 +534,11 @@ func main() {
 		}
 	case "hook":
 		if len(os.Args) == 3 && os.Args[2] == "claude-code" {
-			agentHook(os.Stdin, "claude", false)
+			agentHook(os.Stdin, "claude", transcriptModel)
 			return
 		}
 		if len(os.Args) == 3 && os.Args[2] == "codex" {
-			agentHook(os.Stdin, "codex", true)
+			agentHook(os.Stdin, "codex", eventModel)
 			return
 		}
 		if len(os.Args) != 4 || os.Args[2] != "prepare-commit-msg" {
