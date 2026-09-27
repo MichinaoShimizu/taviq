@@ -2,7 +2,7 @@
   "hooks": [
     {
       "event": "agentSpawn",
-      "command": "python3 scripts/set_runtime.py --tool kiro --mode agent --cwd \"$PWD\" --reset"
+      "command": "python3 scripts/set_runtime.py --tool kiro --mode agent --cwd \"$PWD\""
     }
   ]
 }
