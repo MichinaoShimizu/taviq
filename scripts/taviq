@@ -10,12 +10,21 @@ def load(name,file):
     mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod); return mod
 
 installer=load("taviq_installer","install_basic.py")
-doctor=load("taviq_doctor","doctor.py")
+doctor=load("taviq_doctor","doctor.py")\nhook_writer=load("taviq_hook_writer","taviq_prepare_commit_msg.py")
 
 def main():
     p=argparse.ArgumentParser(prog="taviq",description="AI engineering provenance")
     sub=p.add_subparsers(dest="command",required=True)
     for name in ("init","deinit","install","uninstall","doctor"):
+        q=sub.add_parser(name)
+        q.add_argument("--repo",type=Path,default=Path("."))
+        if name=="doctor": q.add_argument("--json",action="store_true")
+    hook=sub.add_parser("hook")
+    hook_sub=hook.add_subparsers(dest="hook_command",required=True)
+    prepare=hook_sub.add_parser("prepare-commit-msg")
+    prepare.add_argument("message_file")
+    # marker to avoid adding the common parser twice
+    for name in ():
         q=sub.add_parser(name)
         q.add_argument("--repo",type=Path,default=Path("."))
         if name=="doctor": q.add_argument("--json",action="store_true")
