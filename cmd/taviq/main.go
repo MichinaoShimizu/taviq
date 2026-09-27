@@ -6,9 +6,25 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 	"sort"
 	"strings"
 )
+
+// version is stamped by release builds with -ldflags "-X main.version=<tag>".
+var version = ""
+
+// taviqVersion reports the stamped release version, then the module version of
+// a `go install`ed binary, and "dev" for any other local build.
+func taviqVersion() string {
+	if version != "" {
+		return version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+	return "dev"
+}
 
 type Runtime struct {
 	SchemaVersion int      `json:"schema_version"`
@@ -453,7 +469,7 @@ func diagnose() (map[string]any, error) {
 	if core {
 		status = "ready"
 	}
-	return map[string]any{"status": status, "core_ready": core, "checks": checks}, nil
+	return map[string]any{"version": taviqVersion(), "status": status, "core_ready": core, "checks": checks}, nil
 }
 
 func fail(err error) {
@@ -463,11 +479,13 @@ func fail(err error) {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage: taviq <install|uninstall|init|deinit|doctor|observe|hook>")
+		fmt.Println("usage: taviq <install|uninstall|init|deinit|doctor|observe|hook|version>")
 		return
 	}
 
 	switch os.Args[1] {
+	case "version", "--version":
+		fmt.Println("taviq " + taviqVersion())
 	case "install":
 		if err := machineInstall(); err != nil {
 			fail(err)
