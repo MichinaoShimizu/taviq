@@ -43,6 +43,25 @@ func hook(message string) error {
 	return os.WriteFile(message,[]byte(text),0644)
 }
 
+
+func diagnose() (map[string]any,error) {
+	r,err:=root(); if err!=nil{return nil,err}
+	hooksOut,_:=exec.Command("git","config","--get","core.hooksPath").Output()
+	hooks:=strings.TrimSpace(string(hooksOut))
+	checks:=map[string]bool{
+		"git_repository":true,
+		"hooks_path":hooks==".taviq/hooks",
+		"prepare_commit_msg_hook":exists(filepath.Join(r,".taviq","hooks","prepare-commit-msg")),
+		"runtime_writer":exists(filepath.Join(r,"scripts","set_runtime.py")),
+		"commit_writer":exists(filepath.Join(r,"scripts","taviq_prepare_commit_msg.py")),
+		"github_pr_summary":exists(filepath.Join(r,".github","workflows","taviq-basic.yml")),
+	}
+	core:=checks["hooks_path"]&&checks["prepare_commit_msg_hook"]&&checks["runtime_writer"]&&checks["commit_writer"]
+	return map[string]any{"status":map[bool]string{true:"ready",false:"incomplete"}[core],"core_ready":core,"checks":checks},nil
+}
+
+func exists(path string) bool {_,err:=os.Stat(path);return err==nil}
+
 func uniq(xs []string) []string {
 	m:=map[string]bool{}; out:=[]string{}
 	for _,x:=range xs {if x!=""&&!m[x]{m[x]=true;out=append(out,x)}}
