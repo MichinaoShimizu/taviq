@@ -86,6 +86,38 @@ def record(tool, raw, home=DEFAULT_HOME):
     append_event(event,home)
     return event
 
+def aggregate_coverage(changed_files, sessions):
+    changed=set(changed_files or [])
+    observed=set()
+    tools=set()
+    for state in sessions or []:
+        observed.update(state.get("observed_files",[]))
+        if state.get("tool"):
+            tools.add(state["tool"])
+    confirmed=changed & observed
+    unknown=changed-confirmed
+    coverage=(len(confirmed)/len(changed)*100) if changed else None
+    return {
+        "changed_files":len(changed),
+        "confirmed_files":len(confirmed),
+        "unknown_files":len(unknown),
+        "coverage":coverage,
+        "confirmed_paths":sorted(confirmed),
+        "unknown_paths":sorted(unknown),
+        "tools":sorted(tools),
+    }
+
+def github_check_summary(result):
+    cov="n/a" if result["coverage"] is None else f'{result["coverage"]:.1f}%'
+    return {
+        "title":"Taviq AI Provenance",
+        "summary":f'Coverage {cov} · confirmed {result["confirmed_files"]}/{result["changed_files"]} files · unknown {result["unknown_files"]}',
+        "details":[
+            "Coverage means provenance-confirmed changed files, not percentage of code written by AI.",
+            "Unknown is not treated as human-only.",
+        ],
+    }
+
 def main():
     p=argparse.ArgumentParser(description="Privacy-minimal Taviq provenance collector")
     sub=p.add_subparsers(dest="cmd",required=True)
