@@ -113,6 +113,18 @@ repository-localのGit hookが設定されます。
 
 Modelは任意です。確実に取得できない場合は推測しません。
 
+## Verified Provenance（任意）
+
+Basic trailerはそのままでも利用できます。より強い改変検知が必要な場合は、Taviq署名を有効化できます。
+
+- **Recorded / Unverified** — 来歴はあるが署名なし
+- **Verified by Taviq** — 設定されたTaviq署名を検証できた
+- **Invalid** — 署名と現在のmetadataが一致しない
+- **Unknown** — 来歴なし
+
+Taviq署名はAIベンダー自身による証明ではありません。Claude / Codex / Kiroによるvendor attestationとは明確に区別します。
+
+HMAC方式はMVP限定です。セットアップ・ローテーション・漏えい時の扱いは [Verified Provenance Setup](docs/verified-setup.md) を参照してください。将来は公開鍵署名またはsoftware supply-chain attestation方式への移行を想定しています。
 ## Zero-AI-overhead by design
 
 来歴記録のために追加のLLM推論を行いません。
