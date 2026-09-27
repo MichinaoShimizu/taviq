@@ -52,3 +52,15 @@ Check README/docs links, schema compatibility, install/uninstall behavior, CI, o
 
 - Do not modify GitHub Actions YAML by escaped-newline string insertion/replacement.
 - When structurally changing a workflow, rewrite the relevant YAML block/file with real newlines and let Contract Lint validate it.
+
+
+## Documentation synchronization
+
+Implementation changes are not complete until user-facing documentation matches the resulting behavior.
+
+Before merging an implementation PR:
+
+- update README when install, commands, supported tools, repository state, or user workflow changes
+- update the relevant design/operation document when architecture or lifecycle changes
+- do not defer obvious documentation drift to a follow-up PR
+- keep README concise; move detailed rationale to docs

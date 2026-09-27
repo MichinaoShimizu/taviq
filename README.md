@@ -42,7 +42,7 @@ install -m 0755 ./taviq ~/.local/bin/taviq
 taviq install
 ```
 
-Repositoryを有効化:
+Repositoryを有効化（`.taviq.yml` markerのみ作成）:
 
 ```bash
 taviq init
@@ -55,7 +55,7 @@ taviq doctor
 taviq deinit
 ```
 
-Target architectureではmachine-level installとorganization policyにより、repositoryへTaviq実装を置かずzero-touch導入できる形を目指します。
+Git integrationとAI adapterはmachine-levelです。RepositoryにはTaviq実装やhookを置かず、`.taviq.yml`だけで有効化します。Organization policyによるzero-touch導入を次の目標としています。
 
 ## Supported tools
 
@@ -64,6 +64,7 @@ Target architectureではmachine-level installとorganization policyにより、
 | Claude Code | tool / mode / optional model |
 | Codex | tool / mode / optional model |
 | Kiro | tool / mode / optional model |
+| Kiro Crew | tool=kiro / mode=crew / optional model |
 
 取得できないmetadataは推測しません。
 
