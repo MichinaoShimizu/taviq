@@ -46,3 +46,33 @@ Basic must not store prompt/response content, source/diff content, token/credit 
 ## ADR-008 — Schema meaning is versioned
 
 Existing v1 fields must not silently change meaning. Semantic changes require an explicit schema/version decision.
+
+
+## ADR-009 — Organization-ready, server-optional core
+
+Taviq Core must remain usable without a Taviq central server.
+
+The architecture separates:
+
+1. Developer installation / AI-tool integration.
+2. Repository enablement and Git provenance.
+3. Optional organization policy and rollout.
+4. Optional forge integration such as GitHub PR summaries.
+
+Organization adoption must not require copying the full Taviq implementation into every repository.
+
+Repository provenance remains portable Git metadata rather than GitHub-only state.
+
+## ADR-010 — Organization policy is not individual surveillance
+
+Organization policy may define provenance enablement, supported tools, privacy constraints, schema compatibility and rollout requirements.
+
+Basic provenance must not introduce developer productivity ranking, individual AI-usage scoring, or identity-based performance evaluation.
+
+Organization reporting should default to repository / commit / PR evidence boundaries.
+
+## ADR-011 — GitHub integration is optional
+
+Commit provenance recording is Core functionality.
+
+GitHub Actions, reusable workflows, Apps and Rulesets are optional integration/distribution mechanisms. Their absence must not prevent local Git provenance recording.
