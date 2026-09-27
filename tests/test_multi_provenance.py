@@ -22,7 +22,7 @@ class MultiProvenanceTests(unittest.TestCase):
             self.assertEqual(x["models"],["gpt-x","sonnet"])
 
     def test_commit_trailer_is_stable_multi_value(self):
-        lines=H.trailer_lines({"tools":["claude","codex"],"modes":["agent"],"models":["gpt-x","sonnet"]})
+        lines=H.trailer_lines({"tools":["claude","codex"],"modes":["agent"],"models":["gpt-x","sonnet"]},{})
         self.assertEqual(lines,[
             "Taviq-Provenance: v1",
             "Taviq-Tools: claude,codex",
