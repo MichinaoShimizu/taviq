@@ -43,6 +43,18 @@ class ProvenanceTests(unittest.TestCase):
         self.assertEqual(r["unknown_paths"],["b.py"])
         self.assertNotIn("human",r)
 
+    def test_envelope_excludes_usage_and_identity(self):
+        state={"session_id":"secret-session","repository":"r","branch":"b","commit_sha":"abc","observed_files":["src/a.py"],"usage":{"input_tokens":999},"user":"alice","cost":123}
+        e=M.build_envelope(state)
+        self.assertEqual(e["observed_files"],["src/a.py"])
+        self.assertNotIn("usage",e); self.assertNotIn("cost",e); self.assertNotIn("user",e)
+        self.assertNotEqual(e["session_ref"],"secret-session")
+
+    def test_envelope_can_hash_paths(self):
+        e=M.build_envelope({"session_id":"s","observed_files":["src/a.py"]},hash_paths=True)
+        self.assertEqual(e["path_encoding"],"sha256")
+        self.assertNotEqual(e["observed_files"][0],"src/a.py")
+
     def test_event_store_is_jsonl(self):
         with tempfile.TemporaryDirectory() as d:
             event={"schema_version":1,"event":{"id":"x"}}
