@@ -224,7 +224,6 @@ func TestRepositoryMarkerFailsClosedOnUnknownVersion(t *testing.T) {
 		t.Fatal("unknown marker version must not enable repository")
 	}
 }
-\n
 func TestHookIgnoresRepositoryWithoutMarker(t *testing.T) {
 	dir := enterRepo(t)
 	msg := filepath.Join(dir, "msg")
