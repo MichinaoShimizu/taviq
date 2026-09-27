@@ -89,7 +89,7 @@ Changing runner location must not silently change provenance schema or field sem
 
 ## ADR-013 — Go is the target implementation for distributable Taviq Core
 
-Decision: adopt Go as the target implementation for Taviq Core distribution, while retaining the Python implementation during migration.
+Decision: Go is the implementation of Taviq Core. Python is not a Core runtime dependency.
 
 Evidence from the Go Core spike:
 
