@@ -76,7 +76,7 @@ Basic records only explicit commit provenance. It does not calculate AI ROI, hum
 
 | Tool | Automatic Basic metadata | Model |
 | --- | --- | --- |
-| Claude Code | workspace SessionStart hook | optional; never guessed |
+| Claude Code | machine-level `PreToolUse` hook installed by `taviq install` | not recorded |
 | Codex | workspace/plugin SessionStart hook; Skill remains a fallback | optional; never guessed |
 | Kiro | workspace Agent Spawn hook | optional; never guessed |
 
@@ -84,7 +84,7 @@ Basic v0.1 requires tool provenance, not model provenance. Model is enrichment o
 
 ## Dogfood acceptance test
 
-1. AI tool starts work in the repository.
+1. AI tool edits a file or runs a command in the repository.
 2. `<git-dir>/taviq/runtime.json` is created without developer input.
 3. A normal Git commit receives the minimal Taviq trailer.
 4. The runtime file is not committed.

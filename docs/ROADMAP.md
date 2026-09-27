@@ -133,7 +133,7 @@ KPI設計・Delivery/Quality/ROIの読み方はKPI Playbook側の責務として
 
 ### Phase D — Machine-level AI integrations
 - [x] Claude machine-owned adapter (`taviq-claude`)
-- [ ] Claude tool configuration wiring
+- [x] Claude tool configuration wiring
 - [x] Codex machine-owned adapter (`taviq-codex`)
 - [ ] Codex tool configuration wiring
 - [x] Kiro machine-owned adapter (`taviq-kiro`)

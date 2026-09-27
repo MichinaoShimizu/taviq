@@ -233,7 +233,10 @@ func machineInstall() error {
 	if err := installGlobalGitHook(); err != nil {
 		return err
 	}
-	return installIntegrationAdapters()
+	if err := installIntegrationAdapters(); err != nil {
+		return err
+	}
+	return installClaudeCodeIntegration()
 }
 
 func machineUninstall() error {
@@ -245,6 +248,9 @@ func machineUninstall() error {
 		return err
 	}
 	if err := uninstallIntegrationAdapters(); err != nil {
+		return err
+	}
+	if err := uninstallClaudeCodeIntegration(); err != nil {
 		return err
 	}
 	_ = os.Remove(filepath.Join(dir, "state.json"))
@@ -460,6 +466,7 @@ func diagnose() (map[string]any, error) {
 		"machine_hook":             exists(filepath.Join(hooksDir, "prepare-commit-msg")),
 		"no_repository_hooks_path": strings.TrimSpace(string(localOut)) == "",
 		"github_pr_summary":        false,
+		"claude_code_hook":         claudeCodeIntegrationInstalled(),
 	}
 	if r, err := root(); err == nil {
 		checks["github_pr_summary"] = exists(filepath.Join(r, ".github", "workflows", "taviq-basic.yml"))
@@ -524,8 +531,12 @@ func main() {
 			fail(err)
 		}
 	case "hook":
+		if len(os.Args) == 3 && os.Args[2] == "claude-code" {
+			claudeCodeHook(os.Stdin)
+			return
+		}
 		if len(os.Args) != 4 || os.Args[2] != "prepare-commit-msg" {
-			fail(fmt.Errorf("usage: taviq hook prepare-commit-msg <message-file>"))
+			fail(fmt.Errorf("usage: taviq hook <prepare-commit-msg <message-file>|claude-code>"))
 		}
 		if err := hook(os.Args[3]); err != nil {
 			fail(err)

@@ -137,6 +137,7 @@ func TestMachineInstallUninstallIsIdempotent(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
 	t.Setenv("HOME", home)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
 
 	if err := machineInstall(); err != nil {
 		t.Fatal(err)
@@ -232,6 +233,7 @@ func TestGlobalGitHookRefusesExistingOwner(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
 	t.Setenv("HOME", home)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
 	_ = exec.Command("git", "config", "--global", "core.hooksPath", "/other/hooks").Run()
 	err := installGlobalGitHook()
 	if err == nil {
@@ -258,6 +260,7 @@ func TestDoctorUsesMachineHookAndMarker(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
 	t.Setenv("HOME", home)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
 	enterRepo(t)
 	if err := initMarker(); err != nil {
 		t.Fatal(err)
@@ -278,6 +281,7 @@ func TestMachineInstallOwnsIntegrationAdapters(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
 	t.Setenv("HOME", home)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
 
 	if err := machineInstall(); err != nil {
 		t.Fatal(err)
@@ -308,6 +312,7 @@ func TestKiroCrewAdapterUsesCrewMode(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
 	t.Setenv("HOME", home)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
 	if err := machineInstall(); err != nil {
 		t.Fatal(err)
 	}
@@ -389,6 +394,7 @@ func TestMachineHooksChainRepositoryHooks(t *testing.T) {
 	bin := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
 	t.Setenv("HOME", home)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
 	// Stand-in binary so the prepare-commit-msg shim does not run the test binary.
 	_ = os.WriteFile(filepath.Join(bin, "taviq"), []byte("#!/bin/sh\necho taviq >> \"$3\"\n"), 0o755)
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -431,6 +437,7 @@ func TestDoctorReportsRepositoryHooksPathOverride(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
 	t.Setenv("HOME", home)
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
 	enterRepo(t)
 	if err := initMarker(); err != nil {
 		t.Fatal(err)
@@ -464,6 +471,7 @@ func TestVersionPrefersStampedRelease(t *testing.T) {
 func TestDoctorReportsVersion(t *testing.T) {
 	enterRepo(t)
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CLAUDE_CONFIG_DIR", "")
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	x, err := diagnose()
 	if err != nil {

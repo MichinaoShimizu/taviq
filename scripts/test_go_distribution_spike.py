@@ -32,9 +32,11 @@ with tempfile.TemporaryDirectory() as td:
     home = pathlib.Path(td) / "home"
     config = pathlib.Path(td) / "config"
     home.mkdir()
+    (home / ".claude").mkdir()
     subprocess.check_call(["git", "init", str(repo)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     env_machine = dict(os.environ, XDG_CONFIG_HOME=str(config), HOME=str(home))
+    env_machine.pop("CLAUDE_CONFIG_DIR", None)
     subprocess.check_call([str(linux), "install"], cwd=repo, env=env_machine)
     subprocess.check_call([str(linux), "init"], cwd=repo, env=env_machine)
 
@@ -49,11 +51,22 @@ with tempfile.TemporaryDirectory() as td:
     assert "Taviq-Provenance: v1" in text
     assert "Taviq-Tools: claude" in text
 
+    claude_settings = json.loads((home / ".claude" / "settings.json").read_text())
+    assert "hook claude-code" in json.dumps(claude_settings["hooks"]["PreToolUse"])
+    claude_msg = repo / "claude-message"
+    claude_msg.write_text("Claude hook test\n")
+    event = json.dumps({"cwd": str(repo), "hook_event_name": "PreToolUse", "tool_name": "Write"})
+    claude_hook = subprocess.run([str(linux), "hook", "claude-code"], cwd=home, env=env_machine, input=event, text=True, capture_output=True)
+    assert claude_hook.returncode == 0 and claude_hook.stdout == "" and claude_hook.stderr == "", claude_hook
+    subprocess.check_call([str(linux), "hook", "prepare-commit-msg", str(claude_msg)], cwd=repo, env=env_machine)
+    assert "Taviq-Tools: claude" in claude_msg.read_text()
+
     doctor = subprocess.run([str(linux), "doctor"], cwd=repo, env=env_machine, text=True, capture_output=True)
     assert doctor.returncode == 0, doctor.stderr + doctor.stdout
 
     subprocess.check_call([str(linux), "deinit"], cwd=repo, env=env_machine)
     subprocess.check_call([str(linux), "uninstall"], cwd=repo, env=env_machine)
+    assert json.loads((home / ".claude" / "settings.json").read_text()) == {}
 
 shutil.rmtree(out)
 print(json.dumps({"targets": results, "binary_only_external_repo": "passed"}, indent=2))
