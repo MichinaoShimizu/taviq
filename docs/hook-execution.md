@@ -12,7 +12,7 @@ taviq hook prepare-commit-msg <message-file>
 Go Core
 ```
 
-Repository initialization installs only the Git hook/configuration needed to invoke the binary. The Taviq Core implementation is not copied into each repository.
+Machine installation writes the Git hook that invokes the binary; repository initialization writes only the `.taviq.yml` marker. The Taviq Core implementation is not copied into each repository. See [Machine-level Git Integration](global-git-integration.md).
 
 ## Compatibility requirement
 

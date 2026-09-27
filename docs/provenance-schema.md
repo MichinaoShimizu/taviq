@@ -15,10 +15,10 @@ Missing evidence is `Unknown`, not `Human-only`.
 Path:
 
 ```text
-.taviq/runtime.json
+<git-dir>/taviq/runtime.json
 ```
 
-Runtime metadata is ephemeral and Git-ignored. It accumulates observations made before the next commit.
+Runtime metadata is ephemeral and lives inside the Git directory (per worktree), so it never appears as an untracked file and is never committed. It is written only in repositories enabled by `.taviq.yml`. It accumulates observations made before the next commit.
 
 ```json
 {
