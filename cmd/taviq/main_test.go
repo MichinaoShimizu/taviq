@@ -84,3 +84,22 @@ func TestObserveAccumulatesOnSameHeadAndResetsOnNewHead(t *testing.T) {
 	if strings.Join(x.Tools,",")!="kiro"{t.Fatalf("expected reset tools, got %v",x.Tools)}
 	if strings.Join(x.Modes,",")!="crew"{t.Fatalf("expected crew mode, got %v",x.Modes)}
 }
+\n
+func TestObserveThenHookEndToEnd(t *testing.T) {
+	dir:=t.TempDir()
+	if err:=exec.Command("git","init",dir).Run();err!=nil{t.Fatal(err)}
+	old,_:=os.Getwd();defer os.Chdir(old);os.Chdir(dir)
+	if err:=observe("claude","agent","sonnet");err!=nil{t.Fatal(err)}
+	if err:=observe("codex","agent","gpt-x");err!=nil{t.Fatal(err)}
+	msg:=filepath.Join(dir,"msg");os.WriteFile(msg,[]byte("Change\n"),0644)
+	if err:=hook(msg);err!=nil{t.Fatal(err)}
+	b,_:=os.ReadFile(msg);s:=string(b)
+	for _,want:=range []string{
+		"Taviq-Provenance: v1",
+		"Taviq-Tools: claude,codex",
+		"Taviq-Modes: agent",
+		"Taviq-Models: gpt-x,sonnet",
+	}{
+		if !strings.Contains(s,want){t.Fatalf("missing %s in %s",want,s)}
+	}
+}
