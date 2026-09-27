@@ -132,6 +132,50 @@ func TestObserveThenHookEndToEnd(t *testing.T) {
 	}
 }
 
+func TestAgentRolesBecomeAgentsTrailer(t *testing.T) {
+	dir := enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	_ = observeAgent("claude", "agent", "model-main", "main")
+	_ = observeAgent("claude", "agent", "model-sub", "sub")
+	_ = observeAgent("claude", "agent", "", "sub")
+	_ = observe("codex", "agent", "gpt-x")
+	if err := observeAgent("claude", "agent", "", "boss"); err == nil {
+		t.Fatal("unsupported role accepted")
+	}
+	msg := filepath.Join(dir, "msg")
+	_ = os.WriteFile(msg, []byte("Change\n"), 0o644)
+	if err := hook(msg); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(msg)
+	for _, want := range []string{
+		"Taviq-Models: gpt-x,model-main,model-sub",
+		"Taviq-Agents: claude:main=model-main,claude:sub,claude:sub=model-sub",
+	} {
+		if !strings.Contains(string(b), want) {
+			t.Fatalf("missing %s in:\n%s", want, b)
+		}
+	}
+}
+
+func TestNoAgentsTrailerWithoutRoles(t *testing.T) {
+	dir := enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	_ = observe("kiro", "crew", "")
+	msg := filepath.Join(dir, "msg")
+	_ = os.WriteFile(msg, []byte("Change\n"), 0o644)
+	if err := hook(msg); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(msg); strings.Contains(string(b), "Taviq-Agents") {
+		t.Fatalf("unexpected agents trailer:\n%s", b)
+	}
+}
+
 func TestMachineInstallUninstallIsIdempotent(t *testing.T) {
 	config := t.TempDir()
 	home := t.TempDir()

@@ -29,6 +29,8 @@ jobs:
           if r['modes']: print('**Modes:** '+', '.join(f'{k} ({v})' for k,v in r['modes'].items()))
           if r['models']:
               print('**Models:** '+', '.join(f'{k} ({v})' for k,v in r['models'].items()))
+          if r.get('agents'):
+              print('**Agents:** '+', '.join(f'{k} ({v})' for k,v in r['agents'].items()))
           print(f'**Multi-tool commits:** {r["multi_tool_commits"]}')
           print()
           print('Unknown commits are not classified as human-only.')

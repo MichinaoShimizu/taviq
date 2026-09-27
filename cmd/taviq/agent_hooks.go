@@ -289,28 +289,65 @@ type agentEvent struct {
 	Cwd            string `json:"cwd"`
 	Model          string `json:"model"`
 	TranscriptPath string `json:"transcript_path"`
-	ToolInput      struct {
+	// AgentID is set by Claude Code and Codex only when the hook fires
+	// inside a subagent.
+	AgentID   string `json:"agent_id"`
+	ToolInput struct {
 		FilePath     string `json:"file_path"`
 		NotebookPath string `json:"notebook_path"`
 	} `json:"tool_input"`
 }
 
-// eventModel returns the model the tool supplies in the event itself (Codex).
-func eventModel(event agentEvent) string { return event.Model }
+// agentIdentity is what a tool reveals about the agent making a tool call.
+// Empty fields are unknown.
+type agentIdentity struct {
+	model string
+	role  string
+}
+
+// codexAgent returns the model Codex supplies in the event itself, which is
+// the model of the agent making the call, and its role by agent_id.
+func codexAgent(event agentEvent) agentIdentity {
+	role := "main"
+	if event.AgentID != "" {
+		role = "sub"
+	}
+	return agentIdentity{model: event.Model, role: role}
+}
+
+// agentIDPattern keeps a subagent id from escaping the transcript directory.
+var agentIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`)
+
+// claudeCodeAgent distinguishes the main agent from a subagent by agent_id,
+// which Claude Code sets only inside a subagent. A subagent's model comes
+// from its own transcript, which Claude Code keeps next to the session
+// transcript as <session>/subagents/agent-<agent_id>.jsonl; when that file
+// is missing, the model stays unknown rather than falling back to the main
+// agent's.
+func claudeCodeAgent(event agentEvent) agentIdentity {
+	if event.AgentID == "" {
+		return agentIdentity{model: transcriptModel(event.TranscriptPath, ""), role: "main"}
+	}
+	if !agentIDPattern.MatchString(event.AgentID) || !strings.HasSuffix(event.TranscriptPath, ".jsonl") {
+		return agentIdentity{role: "sub"}
+	}
+	path := filepath.Join(strings.TrimSuffix(event.TranscriptPath, ".jsonl"), "subagents", "agent-"+event.AgentID+".jsonl")
+	return agentIdentity{model: transcriptModel(path, event.AgentID), role: "sub"}
+}
 
 // transcriptTailBytes bounds how much of a transcript is read per event.
 const transcriptTailBytes = 256 << 10
 
-// transcriptModel returns the model of the most recent main-thread assistant
-// entry in the Claude Code transcript. Claude Code writes that model itself;
-// Taviq reads only this field and stores nothing else from the transcript.
-// Subagent (sidechain) entries and non-identifier values such as
-// "<synthetic>" are skipped.
-func transcriptModel(event agentEvent) string {
-	if !filepath.IsAbs(event.TranscriptPath) {
+// transcriptModel returns the model of the most recent assistant entry of the
+// given agent in a Claude Code transcript: main-thread entries when agentID
+// is empty, otherwise entries carrying that agentId. Claude Code writes that
+// model itself; Taviq reads only this field and stores nothing else from the
+// transcript. Non-identifier values such as "<synthetic>" are skipped.
+func transcriptModel(path, agentID string) string {
+	if !filepath.IsAbs(path) {
 		return ""
 	}
-	f, err := os.Open(event.TranscriptPath)
+	f, err := os.Open(path)
 	if err != nil {
 		return ""
 	}
@@ -332,11 +369,15 @@ func transcriptModel(event agentEvent) string {
 		var entry struct {
 			Type        string `json:"type"`
 			IsSidechain bool   `json:"isSidechain"`
+			AgentID     string `json:"agentId"`
 			Message     struct {
 				Model string `json:"model"`
 			} `json:"message"`
 		}
-		if json.Unmarshal(lines[i], &entry) != nil || entry.Type != "assistant" || entry.IsSidechain {
+		if json.Unmarshal(lines[i], &entry) != nil || entry.Type != "assistant" {
+			continue
+		}
+		if agentID == "" && entry.IsSidechain || agentID != "" && entry.AgentID != agentID {
 			continue
 		}
 		if modelPattern.MatchString(entry.Message.Model) {
@@ -379,7 +420,8 @@ func eventDir(event agentEvent) string {
 // the tool call the agent is about to make. Stdin is drained fully so the tool
 // never sees a broken pipe. The model is recorded only when the tool itself
 // supplies it (in the event or its own transcript); it is never guessed.
-func agentHook(stdin io.Reader, tool string, model func(agentEvent) string) {
+// Likewise the main/sub role is recorded only when the tool reveals it.
+func agentHook(stdin io.Reader, tool string, identify func(agentEvent) agentIdentity) {
 	b, _ := io.ReadAll(stdin)
 	var event agentEvent
 	_ = json.Unmarshal(b, &event)
@@ -388,9 +430,9 @@ func agentHook(stdin io.Reader, tool string, model func(agentEvent) string) {
 			return
 		}
 	}
-	m := model(event)
-	if !modelPattern.MatchString(m) {
-		m = ""
+	agent := identify(event)
+	if !modelPattern.MatchString(agent.model) {
+		agent.model = ""
 	}
-	_ = observe(tool, "agent", m)
+	_ = observeAgent(tool, "agent", agent.model, agent.role)
 }
