@@ -19,10 +19,7 @@ type Runtime struct {
 }
 
 const hookScript = `#!/bin/sh
-if command -v taviq >/dev/null 2>&1; then
-  exec taviq hook prepare-commit-msg "$1"
-fi
-exec python3 "$(git rev-parse --show-toplevel)/scripts/taviq_prepare_commit_msg.py" "$1"
+exec taviq hook prepare-commit-msg "$1"
 `
 
 func root() (string, error) {
