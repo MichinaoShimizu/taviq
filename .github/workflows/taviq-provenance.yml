@@ -1,0 +1,37 @@
+name: Taviq Provenance
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  provenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch changed files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/${{ github.repository }}/pull/${{ github.event.pull_request.number }}/files --paginate --jq '[.[].filename]' > /tmp/changed-files.json
+      - name: Prepare available session evidence
+        run: |
+          if [ -f .taviq/sessions.json ]; then cp .taviq/sessions.json /tmp/sessions.json; else echo '[]' > /tmp/sessions.json; fi
+      - name: Build provenance report
+        run: python3 scripts/provenance_report.py --changed-files /tmp/changed-files.json --sessions /tmp/sessions.json --output /tmp/taviq-provenance.json
+      - name: Publish job summary
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          r=json.load(open('/tmp/taviq-provenance.json'))
+          p=r['provenance']; c=r['check']
+          cov='n/a' if p['coverage'] is None else f"{p['coverage']:.1f}%"
+          print('# Taviq AI Provenance')
+          print()
+          print(f'**Coverage:** {cov}')
+          print(f'**Confirmed:** {p["confirmed_files"]} / {p["changed_files"]} files')
+          print(f'**Unknown:** {p["unknown_files"]} files')
+          print()
+          for d in c['details']: print(f'- {d}')
+          PY
