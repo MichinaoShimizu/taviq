@@ -25,7 +25,8 @@ Runtime metadata is ephemeral and lives inside the Git directory (per worktree),
   "schema_version": 1,
   "tools": ["claude", "codex"],
   "modes": ["agent"],
-  "models": ["model-a", "model-b"]
+  "models": ["model-a", "model-b"],
+  "agents": ["claude:main=model-a", "claude:sub=model-b", "codex:main"]
 }
 ```
 
@@ -78,6 +79,25 @@ Does not mean:
 - relative contribution
 - model quality
 
+### agents
+
+Type: optional set of strings, `<tool>:<role>` or `<tool>:<role>=<model>`.
+
+Roles:
+
+- `main` — the agent the developer runs
+- `sub` — a subagent spawned by an agent
+
+Meaning: which kind of agent was observed making a tool call, with that agent's model when the tool exposes it. An entry is written only when the tool itself reveals the role (for example, Claude Code and Codex set `agent_id` on hook events inside a subagent); otherwise no entry is written. A missing model is omitted, never filled with another agent's model.
+
+Does not mean:
+
+- which subagent was spawned by which main agent, or how many subagents ran
+- that a subagent changed any file of the final commit
+- relative contribution of main agents and subagents
+
+`models` remains the union of all observed models, so readers that ignore `agents` see the same v1 meaning.
+
 ### accumulation
 
 Sets are deduplicated. Order has no semantic meaning.
@@ -110,13 +130,14 @@ Taviq-Provenance: v1
 Taviq-Tools: claude,codex
 Taviq-Modes: agent
 Taviq-Models: model-a,model-b
+Taviq-Agents: claude:main=model-a,claude:sub=model-b
 ```
 
 Rules:
 
 - `Taviq-Provenance: v1` marks the commit as Recorded.
 - Tools must contain at least one observed tool.
-- Modes and Models are optional.
+- Modes, Models and Agents are optional. `Taviq-Agents` is an optional field added within v1; readers that do not know it can ignore it.
 - Values are deduplicated and serialized in stable lexical order.
 - Unknown values are omitted.
 - Empty fields are not written.
@@ -183,7 +204,7 @@ It means Claude was recorded on four commits and Codex on two, with at least one
 
 Number of commits containing more than one recorded tool.
 
-The same principle applies to multiple modes and models.
+The same principle applies to multiple modes, models and agents (`agents` counts each `<tool>:<role>[=<model>]` entry per commit).
 
 ## 4. Time/window semantics
 

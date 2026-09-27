@@ -23,4 +23,12 @@ class BasicE2ETests(unittest.TestCase):
         self.assertEqual(r["models"],{})
         self.assertEqual(r["coverage"],100)
 
+    def test_agent_roles_are_overlapping_counts(self):
+        r=M.summarize([
+            {"commit":"a","version":"v1","tools":["claude"],"agents":["claude:main=m1","claude:sub=m2"],"status":"recorded"},
+            {"commit":"b","version":"v1","tools":["claude"],"agents":["claude:main=m1"],"status":"recorded"},
+            {"commit":"c","version":"v1","tools":["kiro"],"status":"recorded"},
+        ])
+        self.assertEqual(r["agents"],{"claude:main=m1":2,"claude:sub=m2":1})
+
 if __name__=="__main__": unittest.main()

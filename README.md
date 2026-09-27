@@ -15,6 +15,7 @@ Taviq-Provenance: v1
 Taviq-Tools: claude,codex
 Taviq-Modes: agent
 Taviq-Models: <optional>
+Taviq-Agents: <optional>
 ```
 
 UnknownはHuman-onlyを意味しません。証拠がなければUnknownとして扱います。
@@ -62,8 +63,8 @@ Git integrationとAI adapterはmachine-levelです。RepositoryにはTaviq実装
 
 | Tool | Provenance |
 | --- | --- |
-| Claude Code | tool / mode / model（`taviq install`で自動設定） |
-| Codex | tool / mode / model（`taviq install`で自動設定、初回のみ`/hooks`で承認） |
+| Claude Code | tool / mode / model / main・sub agent（`taviq install`で自動設定） |
+| Codex | tool / mode / model / main・sub agent（`taviq install`で自動設定、初回のみ`/hooks`で承認） |
 | Kiro | tool / mode（adapterのみ、自動設定は未対応） |
 | Kiro Crew | tool=kiro / mode=crew（adapterのみ） |
 

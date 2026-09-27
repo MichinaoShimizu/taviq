@@ -194,9 +194,9 @@ func writeTranscript(t *testing.T, lines ...string) string {
 
 func TestClaudeCodeHookObservesEventCwd(t *testing.T) {
 	_, event := hookEventInRepo(t, map[string]any{"model": "claude-x", "tool_name": "Bash", "tool_input": map[string]any{"command": "git commit"}})
-	agentHook(strings.NewReader(event), "claude", transcriptModel)
+	agentHook(strings.NewReader(event), "claude", claudeCodeAgent)
 	x := observedRuntime(t)
-	if !reflect.DeepEqual(x.Tools, []string{"claude"}) || !reflect.DeepEqual(x.Modes, []string{"agent"}) || len(x.Models) != 0 {
+	if !reflect.DeepEqual(x.Tools, []string{"claude"}) || !reflect.DeepEqual(x.Modes, []string{"agent"}) || len(x.Models) != 0 || !reflect.DeepEqual(x.Agents, []string{"claude:main"}) {
 		t.Fatalf("unexpected observation: %+v", x)
 	}
 }
@@ -211,9 +211,54 @@ func TestClaudeCodeHookRecordsTranscriptModel(t *testing.T) {
 		`not json`,
 	)
 	_, event := hookEventInRepo(t, map[string]any{"transcript_path": transcript, "model": "claude-ignored"})
-	agentHook(strings.NewReader(event), "claude", transcriptModel)
-	if x := observedRuntime(t); !reflect.DeepEqual(x.Models, []string{"claude-main"}) {
+	agentHook(strings.NewReader(event), "claude", claudeCodeAgent)
+	if x := observedRuntime(t); !reflect.DeepEqual(x.Models, []string{"claude-main"}) || !reflect.DeepEqual(x.Agents, []string{"claude:main=claude-main"}) {
 		t.Fatalf("unexpected observation: %+v", x)
+	}
+}
+
+// writeSubagentTranscript places a subagent transcript where Claude Code keeps
+// it relative to the session transcript.
+func writeSubagentTranscript(t *testing.T, session, agentID string, lines ...string) {
+	t.Helper()
+	dir := filepath.Join(strings.TrimSuffix(session, ".jsonl"), "subagents")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "agent-"+agentID+".jsonl"), []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestClaudeCodeHookRecordsSubagentModel(t *testing.T) {
+	session := writeTranscript(t, `{"type":"assistant","message":{"model":"claude-main"}}`)
+	writeSubagentTranscript(t, session, "a1b2",
+		`{"type":"assistant","isSidechain":true,"agentId":"a1b2","message":{"model":"claude-sub"}}`,
+		`{"type":"assistant","isSidechain":true,"agentId":"other","message":{"model":"claude-other"}}`,
+	)
+	_, event := hookEventInRepo(t, map[string]any{"transcript_path": session, "agent_id": "a1b2", "agent_type": "Explore"})
+	agentHook(strings.NewReader(event), "claude", claudeCodeAgent)
+	x := observedRuntime(t)
+	if !reflect.DeepEqual(x.Models, []string{"claude-sub"}) || !reflect.DeepEqual(x.Agents, []string{"claude:sub=claude-sub"}) {
+		t.Fatalf("unexpected observation: %+v", x)
+	}
+}
+
+func TestClaudeCodeHookLeavesUnknownSubagentModelEmpty(t *testing.T) {
+	session := writeTranscript(t, `{"type":"assistant","message":{"model":"claude-main"}}`)
+	writeSubagentTranscript(t, session, "a1b2", `{"type":"assistant","message":{"model":"claude-planted"}}`)
+	for _, agentID := range []string{"missing", "../a1b2", "a1b2/../../x"} {
+		_, event := hookEventInRepo(t, map[string]any{"transcript_path": session, "agent_id": agentID})
+		agentHook(strings.NewReader(event), "claude", claudeCodeAgent)
+		if x := observedRuntime(t); len(x.Models) != 0 || !reflect.DeepEqual(x.Agents, []string{"claude:sub"}) {
+			t.Fatalf("%s: unexpected observation: %+v", agentID, x)
+		}
+	}
+	// Entries without the matching agentId are not the subagent's.
+	_, event := hookEventInRepo(t, map[string]any{"transcript_path": session, "agent_id": "a1b2"})
+	agentHook(strings.NewReader(event), "claude", claudeCodeAgent)
+	if x := observedRuntime(t); len(x.Models) != 0 {
+		t.Fatalf("model without matching agentId recorded: %+v", x)
 	}
 }
 
@@ -221,7 +266,7 @@ func TestClaudeCodeHookReadsOnlyTranscriptTail(t *testing.T) {
 	filler := `{"type":"user","message":{"content":"` + strings.Repeat("x", transcriptTailBytes) + `"}}`
 	transcript := writeTranscript(t, `{"type":"assistant","message":{"model":"claude-early"}}`, filler)
 	_, event := hookEventInRepo(t, map[string]any{"transcript_path": transcript})
-	agentHook(strings.NewReader(event), "claude", transcriptModel)
+	agentHook(strings.NewReader(event), "claude", claudeCodeAgent)
 	if x := observedRuntime(t); len(x.Models) != 0 {
 		t.Fatalf("model read beyond the transcript tail: %+v", x)
 	}
@@ -230,7 +275,7 @@ func TestClaudeCodeHookReadsOnlyTranscriptTail(t *testing.T) {
 func TestClaudeCodeHookIgnoresUnusableTranscript(t *testing.T) {
 	for _, transcript := range []string{"relative.jsonl", filepath.Join(t.TempDir(), "missing.jsonl"), t.TempDir()} {
 		_, event := hookEventInRepo(t, map[string]any{"transcript_path": transcript})
-		agentHook(strings.NewReader(event), "claude", transcriptModel)
+		agentHook(strings.NewReader(event), "claude", claudeCodeAgent)
 		if x := observedRuntime(t); !reflect.DeepEqual(x.Tools, []string{"claude"}) || len(x.Models) != 0 {
 			t.Fatalf("%s: unexpected observation: %+v", transcript, x)
 		}
@@ -244,7 +289,7 @@ func TestAgentHookObservesEditedFileRepository(t *testing.T) {
 		// The file and its directory may not exist yet (Write creates them).
 		target := filepath.Join(repo, "new", "dir", "file.txt")
 		event, _ := json.Marshal(map[string]any{"cwd": elsewhere, "tool_input": map[string]any{field: target}})
-		agentHook(strings.NewReader(string(event)), "claude", transcriptModel)
+		agentHook(strings.NewReader(string(event)), "claude", claudeCodeAgent)
 		if x := observedRuntime(t); !reflect.DeepEqual(x.Tools, []string{"claude"}) {
 			t.Fatalf("%s: unexpected observation: %+v", field, x)
 		}
@@ -257,7 +302,7 @@ func TestAgentHookObservesEditedFileRepository(t *testing.T) {
 func TestAgentHookResolvesRelativeFilePathAgainstCwd(t *testing.T) {
 	repo, _ := hookEventInRepo(t, map[string]any{})
 	event, _ := json.Marshal(map[string]any{"cwd": filepath.Dir(repo), "tool_input": map[string]any{"file_path": filepath.Join(filepath.Base(repo), "a.txt")}})
-	agentHook(strings.NewReader(string(event)), "claude", transcriptModel)
+	agentHook(strings.NewReader(string(event)), "claude", claudeCodeAgent)
 	if x := observedRuntime(t); !reflect.DeepEqual(x.Tools, []string{"claude"}) {
 		t.Fatalf("unexpected observation: %+v", x)
 	}
@@ -265,16 +310,29 @@ func TestAgentHookResolvesRelativeFilePathAgainstCwd(t *testing.T) {
 
 func TestCodexHookRecordsSuppliedModel(t *testing.T) {
 	_, event := hookEventInRepo(t, map[string]any{"model": "gpt-5.3-codex", "tool_name": "Bash"})
-	agentHook(strings.NewReader(event), "codex", eventModel)
+	agentHook(strings.NewReader(event), "codex", codexAgent)
 	x := observedRuntime(t)
 	if !reflect.DeepEqual(x.Tools, []string{"codex"}) || !reflect.DeepEqual(x.Models, []string{"gpt-5.3-codex"}) {
 		t.Fatalf("unexpected observation: %+v", x)
 	}
 }
 
+func TestCodexHookRecordsAgentRole(t *testing.T) {
+	_, event := hookEventInRepo(t, map[string]any{"model": "gpt-main"})
+	agentHook(strings.NewReader(event), "codex", codexAgent)
+	if x := observedRuntime(t); !reflect.DeepEqual(x.Agents, []string{"codex:main=gpt-main"}) {
+		t.Fatalf("unexpected observation: %+v", x)
+	}
+	_, event = hookEventInRepo(t, map[string]any{"model": "gpt-sub", "agent_id": "019a-thread", "agent_type": "explorer"})
+	agentHook(strings.NewReader(event), "codex", codexAgent)
+	if x := observedRuntime(t); !reflect.DeepEqual(x.Models, []string{"gpt-sub"}) || !reflect.DeepEqual(x.Agents, []string{"codex:sub=gpt-sub"}) {
+		t.Fatalf("unexpected observation: %+v", x)
+	}
+}
+
 func TestCodexHookDropsUnsafeModel(t *testing.T) {
 	_, event := hookEventInRepo(t, map[string]any{"model": "a,b\nTaviq-Tools: forged"})
-	agentHook(strings.NewReader(event), "codex", eventModel)
+	agentHook(strings.NewReader(event), "codex", codexAgent)
 	if x := observedRuntime(t); len(x.Models) != 0 {
 		t.Fatalf("unsafe model recorded: %+v", x)
 	}
@@ -287,8 +345,8 @@ func TestAgentHookIgnoresNonRepository(t *testing.T) {
 	if err := os.Chdir(outside); err != nil {
 		t.Fatal(err)
 	}
-	agentHook(strings.NewReader(`{"cwd":"`+outside+`"}`), "codex", eventModel)
-	agentHook(strings.NewReader("not json"), "claude", transcriptModel)
+	agentHook(strings.NewReader(`{"cwd":"`+outside+`"}`), "codex", codexAgent)
+	agentHook(strings.NewReader("not json"), "claude", claudeCodeAgent)
 	if entries, _ := os.ReadDir(outside); len(entries) != 0 {
 		t.Fatalf("hook wrote outside a repository: %v", entries)
 	}

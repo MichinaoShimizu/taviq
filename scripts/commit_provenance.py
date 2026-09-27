@@ -2,7 +2,7 @@
 import argparse, json, subprocess
 from pathlib import Path
 
-KEYS={"Taviq-Provenance":"version","Taviq-Tools":"tools","Taviq-Modes":"modes","Taviq-Models":"models"}
+KEYS={"Taviq-Provenance":"version","Taviq-Tools":"tools","Taviq-Modes":"modes","Taviq-Models":"models","Taviq-Agents":"agents"}
 
 def split_values(value):
     return sorted(set(v.strip() for v in (value or "").split(",") if v.strip()))
@@ -18,7 +18,7 @@ def trailers(repo,base,head):
                 mark=prefix+":"
                 if line.startswith(mark):
                     raw=line[len(mark):].strip()
-                    found[key]=split_values(raw) if key in ("tools","modes","models") else raw
+                    found[key]=split_values(raw) if key in ("tools","modes","models","agents") else raw
         # Backward-compatible legacy single-value trailers.
         legacy={"Taviq-Tool":"tools","Taviq-Mode":"modes","Taviq-Model":"models"}
         for line in body.splitlines():
@@ -43,6 +43,7 @@ def summarize(rows):
         "tools":counts("tools"),
         "modes":counts("modes"),
         "models":counts("models"),
+        "agents":counts("agents"),
         "multi_tool_commits":sum(1 for r in recorded if len(r.get("tools",[]))>1),
     }
 

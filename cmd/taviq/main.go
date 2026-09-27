@@ -32,7 +32,14 @@ type Runtime struct {
 	Tools         []string `json:"tools"`
 	Modes         []string `json:"modes"`
 	Models        []string `json:"models"`
+	// Agents records "<tool>:<role>[=<model>]" when the integration itself
+	// reveals whether the main agent or a subagent made the tool call.
+	Agents []string `json:"agents,omitempty"`
 }
+
+// agentRoles are the roles an integration can report: the agent the user
+// runs, or a subagent it spawned.
+var agentRoles = map[string]bool{"main": true, "sub": true}
 
 // chainedGitHooks are the client-side hooks a global core.hooksPath would
 // otherwise hide from every repository. Each shim runs the repository's own
@@ -343,7 +350,14 @@ func uniq(xs []string) []string {
 	return out
 }
 
-func observe(tool, mode, model string) error {
+func observe(tool, mode, model string) error { return observeAgent(tool, mode, model, "") }
+
+// observeAgent records an observation; role is "" when the integration does
+// not reveal whether a main agent or a subagent acted.
+func observeAgent(tool, mode, model, role string) error {
+	if role != "" && !agentRoles[role] {
+		return fmt.Errorf("unsupported agent role: %s", role)
+	}
 	if tool != "claude" && tool != "codex" && tool != "kiro" {
 		return fmt.Errorf("unsupported tool: %s", tool)
 	}
@@ -377,6 +391,13 @@ func observe(tool, mode, model string) error {
 	}
 	if model != "" {
 		x.Models = uniq(append(x.Models, model))
+	}
+	if role != "" {
+		agent := tool + ":" + role
+		if model != "" {
+			agent += "=" + model
+		}
+		x.Agents = uniq(append(x.Agents, agent))
 	}
 	b, err := json.Marshal(x)
 	if err != nil {
@@ -413,6 +434,7 @@ func hook(message string) error {
 	x.Tools = uniq(x.Tools)
 	x.Modes = uniq(x.Modes)
 	x.Models = uniq(x.Models)
+	x.Agents = uniq(x.Agents)
 	if len(x.Tools) == 0 {
 		return nil
 	}
@@ -433,6 +455,9 @@ func hook(message string) error {
 	}
 	if len(x.Models) > 0 {
 		trailers = append(trailers, "Taviq-Models: "+strings.Join(x.Models, ","))
+	}
+	if len(x.Agents) > 0 {
+		trailers = append(trailers, "Taviq-Agents: "+strings.Join(x.Agents, ","))
 	}
 	// Explicit placement overrides any trailer.* settings in user Git config.
 	args := []string{"interpret-trailers", "--in-place", "--where", "end", "--if-exists", "add", "--if-missing", "add"}
@@ -534,11 +559,11 @@ func main() {
 		}
 	case "hook":
 		if len(os.Args) == 3 && os.Args[2] == "claude-code" {
-			agentHook(os.Stdin, "claude", transcriptModel)
+			agentHook(os.Stdin, "claude", claudeCodeAgent)
 			return
 		}
 		if len(os.Args) == 3 && os.Args[2] == "codex" {
-			agentHook(os.Stdin, "codex", eventModel)
+			agentHook(os.Stdin, "codex", codexAgent)
 			return
 		}
 		if len(os.Args) != 4 || os.Args[2] != "prepare-commit-msg" {
