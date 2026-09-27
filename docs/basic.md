@@ -62,3 +62,23 @@ Unknown commits are not treated as human-only.
 ## Limitation
 
 Basic proves only explicit commit provenance. It does not calculate AI ROI, human time saved, quality impact, or causal effect. Those require additional data sources.
+
+## Supported Basic integrations
+
+| Tool | Automatic Basic metadata | Model |
+| --- | --- | --- |
+| Claude Code | workspace SessionStart hook | optional; never guessed |
+| Codex | workspace/plugin SessionStart hook; Skill remains a fallback | optional; never guessed |
+| Kiro | workspace Agent Spawn hook | optional; never guessed |
+
+Basic v0.1 requires reliable tool provenance, not model provenance. Model is enrichment only.
+
+## Dogfood acceptance test
+
+1. AI tool starts work in the repository.
+2. `.taviq/runtime.json` is created without developer input.
+3. A normal Git commit receives the minimal Taviq trailer.
+4. The runtime file is not committed.
+5. A pull request triggers the Taviq Basic Provenance workflow.
+6. The Actions summary reports the commit as confirmed and identifies the observed tool.
+7. No prompt, response, code, token, cost, or developer identity appears in the trailer or summary.
