@@ -17,7 +17,7 @@ def install(root):
     target=hooks/"prepare-commit-msg"
     previous=git(root,"config","--get","core.hooksPath") if subprocess.run(["git","-C",str(root),"config","--get","core.hooksPath"],capture_output=True).returncode==0 else ""
     state=root/".taviq"/"install-state"
-    state.write_text(previous)
+    if not state.exists():\n        state.write_text(previous)
     target.write_text(HOOK); target.chmod(0o755)
     subprocess.check_call(["git","-C",str(root),"config","core.hooksPath",".taviq/hooks"])
     print("Taviq Basic installed. Tool integrations will record provenance automatically.")
