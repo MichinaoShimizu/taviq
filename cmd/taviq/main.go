@@ -35,6 +35,48 @@ func machineConfigDir() (string, error) {
 	return filepath.Join(base, "taviq"), nil
 }
 
+func globalHooksDir() (string, error) {
+	dir, err := machineConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "hooks"), nil
+}
+
+func installGlobalGitHook() error {
+	dir, err := globalHooksDir()
+	if err != nil {
+		return err
+	}
+	out, _ := exec.Command("git", "config", "--global", "--get", "core.hooksPath").Output()
+	current := strings.TrimSpace(string(out))
+	if current != "" && current != dir {
+		return fmt.Errorf("global core.hooksPath already owned by another integration: %s", current)
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	target := filepath.Join(dir, "prepare-commit-msg")
+	if err := os.WriteFile(target, []byte(hookScript), 0o755); err != nil {
+		return err
+	}
+	return exec.Command("git", "config", "--global", "core.hooksPath", dir).Run()
+}
+
+func uninstallGlobalGitHook() error {
+	dir, err := globalHooksDir()
+	if err != nil {
+		return err
+	}
+	out, _ := exec.Command("git", "config", "--global", "--get", "core.hooksPath").Output()
+	if strings.TrimSpace(string(out)) == dir {
+		_ = exec.Command("git", "config", "--global", "--unset", "core.hooksPath").Run()
+	}
+	_ = os.Remove(filepath.Join(dir, "prepare-commit-msg"))
+	_ = os.Remove(dir)
+	return nil
+}
+
 func machineInstall() error {
 	dir, err := machineConfigDir()
 	if err != nil {
@@ -48,12 +90,18 @@ func machineInstall() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "state.json"), b, 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "state.json"), b, 0o644); err != nil {
+		return err
+	}
+	return installGlobalGitHook()
 }
 
 func machineUninstall() error {
 	dir, err := machineConfigDir()
 	if err != nil {
+		return err
+	}
+	if err := uninstallGlobalGitHook(); err != nil {
 		return err
 	}
 	_ = os.Remove(filepath.Join(dir, "state.json"))
@@ -140,7 +188,7 @@ func observe(tool, mode, model string) error {
 		return err
 	}
 	dir := filepath.Join(r, ".taviq")
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 	path := filepath.Join(dir, "runtime.json")
@@ -165,10 +213,17 @@ func observe(tool, mode, model string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, b, 0644)
+	return os.WriteFile(path, b, 0o644)
 }
 
 func hook(message string) error {
+	enabled, err := repoEnabled()
+	if err != nil {
+		return err
+	}
+	if !enabled {
+		return nil
+	}
 	r, err := root()
 	if err != nil {
 		return err
@@ -207,7 +262,7 @@ func hook(message string) error {
 		lines = append(lines, "Taviq-Models: "+strings.Join(x.Models, ","))
 	}
 	text := strings.TrimRight(string(body), "\n") + "\n\n" + strings.Join(lines, "\n") + "\n"
-	return os.WriteFile(message, []byte(text), 0644)
+	return os.WriteFile(message, []byte(text), 0o644)
 }
 
 func initRepo() error {
@@ -216,18 +271,18 @@ func initRepo() error {
 		return err
 	}
 	dir := filepath.Join(r, ".taviq", "hooks")
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
 	state := filepath.Join(r, ".taviq", "install-state")
 	if _, err := os.Stat(state); os.IsNotExist(err) {
 		out, _ := exec.Command("git", "config", "--get", "core.hooksPath").Output()
-		if err := os.WriteFile(state, []byte(strings.TrimSpace(string(out))), 0644); err != nil {
+		if err := os.WriteFile(state, []byte(strings.TrimSpace(string(out))), 0o644); err != nil {
 			return err
 		}
 	}
 	target := filepath.Join(dir, "prepare-commit-msg")
-	if err := os.WriteFile(target, []byte(hookScript), 0755); err != nil {
+	if err := os.WriteFile(target, []byte(hookScript), 0o755); err != nil {
 		return err
 	}
 	return exec.Command("git", "config", "core.hooksPath", ".taviq/hooks").Run()

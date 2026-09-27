@@ -30,8 +30,11 @@ func configureGit() {
 
 func TestHookGoldenTrailer(t *testing.T) {
 	dir := enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
 	msg := filepath.Join(dir, "msg")
-	_ = os.WriteFile(msg, []byte("Change\n"), 0644)
+	_ = os.WriteFile(msg, []byte("Change\n"), 0o644)
 	t.Setenv("TAVIQ_TOOL", "claude")
 	t.Setenv("TAVIQ_MODE", "agent")
 	if err := hook(msg); err != nil {
@@ -46,10 +49,13 @@ func TestHookGoldenTrailer(t *testing.T) {
 
 func TestHookMultiValueSorted(t *testing.T) {
 	dir := enterRepo(t)
-	_ = os.Mkdir(filepath.Join(dir, ".taviq"), 0755)
-	_ = os.WriteFile(filepath.Join(dir, ".taviq", "runtime.json"), []byte(`{"tools":["codex","claude"],"modes":["agent"],"models":["z","a"]}`), 0644)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	_ = os.Mkdir(filepath.Join(dir, ".taviq"), 0o755)
+	_ = os.WriteFile(filepath.Join(dir, ".taviq", "runtime.json"), []byte(`{"tools":["codex","claude"],"modes":["agent"],"models":["z","a"]}`), 0o644)
 	msg := filepath.Join(dir, "msg")
-	_ = os.WriteFile(msg, []byte("X\n"), 0644)
+	_ = os.WriteFile(msg, []byte("X\n"), 0o644)
 	if err := hook(msg); err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +106,7 @@ func TestDoctorCoreDoesNotRequireGitHubActions(t *testing.T) {
 func TestObserveAccumulatesAndResetsOnHeadChange(t *testing.T) {
 	dir := enterRepo(t)
 	configureGit()
-	_ = os.WriteFile("a", []byte("a"), 0644)
+	_ = os.WriteFile("a", []byte("a"), 0o644)
 	_ = exec.Command("git", "add", "a").Run()
 	_ = exec.Command("git", "commit", "-m", "a").Run()
 
@@ -115,7 +121,7 @@ func TestObserveAccumulatesAndResetsOnHeadChange(t *testing.T) {
 	}
 	oldHead := x.BaseHead
 
-	_ = os.WriteFile("b", []byte("b"), 0644)
+	_ = os.WriteFile("b", []byte("b"), 0o644)
 	_ = exec.Command("git", "add", "b").Run()
 	_ = exec.Command("git", "commit", "-m", "b").Run()
 	_ = observe("kiro", "crew", "")
@@ -128,10 +134,13 @@ func TestObserveAccumulatesAndResetsOnHeadChange(t *testing.T) {
 
 func TestObserveThenHookEndToEnd(t *testing.T) {
 	dir := enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
 	_ = observe("claude", "agent", "sonnet")
 	_ = observe("codex", "agent", "gpt-x")
 	msg := filepath.Join(dir, "msg")
-	_ = os.WriteFile(msg, []byte("Change\n"), 0644)
+	_ = os.WriteFile(msg, []byte("Change\n"), 0o644)
 	if err := hook(msg); err != nil {
 		t.Fatal(err)
 	}
@@ -222,5 +231,34 @@ func TestRepositoryMarkerFailsClosedOnUnknownVersion(t *testing.T) {
 	}
 	if enabled {
 		t.Fatal("unknown marker version must not enable repository")
+	}
+}
+func TestHookIgnoresRepositoryWithoutMarker(t *testing.T) {
+	dir := enterRepo(t)
+	msg := filepath.Join(dir, "msg")
+	_ = os.WriteFile(msg, []byte("Change\n"), 0o644)
+	t.Setenv("TAVIQ_TOOL", "claude")
+	if err := hook(msg); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(msg)
+	if string(b) != "Change\n" {
+		t.Fatalf("unmarked repository must be untouched: %q", b)
+	}
+}
+
+func TestGlobalGitHookRefusesExistingOwner(t *testing.T) {
+	config := t.TempDir()
+	home := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", config)
+	t.Setenv("HOME", home)
+	_ = exec.Command("git", "config", "--global", "core.hooksPath", "/other/hooks").Run()
+	err := installGlobalGitHook()
+	if err == nil {
+		t.Fatal("expected existing global hooksPath conflict")
+	}
+	out, _ := exec.Command("git", "config", "--global", "--get", "core.hooksPath").Output()
+	if strings.TrimSpace(string(out)) != "/other/hooks" {
+		t.Fatal("existing global hooksPath must remain unchanged")
 	}
 }
