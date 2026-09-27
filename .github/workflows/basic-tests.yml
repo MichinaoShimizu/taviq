@@ -25,7 +25,7 @@ jobs:
         run: python3 -m compileall -q scripts tests
       - name: Go spike tests
         run: go test ./cmd/taviq
-      - name: Unit tests
+      - name: Go spike benchmark\n        run: python3 scripts/benchmark_go_spike.py\n      - name: Unit tests
         run: python3 -m unittest discover -s tests -p 'test_*.py'
       - name: Basic overhead benchmark
         run: |
