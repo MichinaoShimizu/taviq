@@ -16,11 +16,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
       - name: Taviq contract lint
         run: python3 scripts/lint_contract.py
       - name: Python compile check
         run: python3 -m compileall -q scripts tests
-      - name: Go spike tests\n        run: go test ./cmd/taviq\n      - name: Unit tests
+      - name: Go spike tests
+        run: go test ./cmd/taviq
+      - name: Unit tests
         run: python3 -m unittest discover -s tests -p 'test_*.py'
       - name: Basic overhead benchmark
         run: |
