@@ -44,6 +44,40 @@ func hook(message string) error {
 }
 
 
+
+const hookScript = `#!/bin/sh
+if command -v taviq >/dev/null 2>&1; then
+  exec taviq hook prepare-commit-msg "$1"
+fi
+exec python3 "$(git rev-parse --show-toplevel)/scripts/taviq_prepare_commit_msg.py" "$1"
+`
+
+func initRepo() error {
+	r,err:=root();if err!=nil{return err}
+	dir:=filepath.Join(r,".taviq","hooks");if err:=os.MkdirAll(dir,0755);err!=nil{return err}
+	state:=filepath.Join(r,".taviq","install-state")
+	if _,err:=os.Stat(state);os.IsNotExist(err){
+		out,_:=exec.Command("git","config","--get","core.hooksPath").Output()
+		if err:=os.WriteFile(state,[]byte(strings.TrimSpace(string(out))),0644);err!=nil{return err}
+	}
+	target:=filepath.Join(dir,"prepare-commit-msg")
+	if err:=os.WriteFile(target,[]byte(hookScript),0755);err!=nil{return err}
+	return exec.Command("git","config","core.hooksPath",".taviq/hooks").Run()
+}
+
+func deinitRepo() error {
+	r,err:=root();if err!=nil{return err}
+	state:=filepath.Join(r,".taviq","install-state")
+	b,err:=os.ReadFile(state)
+	previous:=""
+	if err==nil{previous=string(b)}
+	var cmd *exec.Cmd
+	if previous!=""{cmd=exec.Command("git","config","core.hooksPath",previous)}else{cmd=exec.Command("git","config","--unset","core.hooksPath")}
+	_ = cmd.Run()
+	for _,p:=range []string{filepath.Join(r,".taviq","hooks","prepare-commit-msg"),filepath.Join(r,".taviq","runtime.json"),state}{_ = os.Remove(p)}
+	return nil
+}
+
 func diagnose() (map[string]any,error) {
 	r,err:=root(); if err!=nil{return nil,err}
 	hooksOut,_:=exec.Command("git","config","--get","core.hooksPath").Output()
