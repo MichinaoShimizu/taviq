@@ -52,8 +52,12 @@ func TestHookMultiValueSorted(t *testing.T) {
 	if err := initMarker(); err != nil {
 		t.Fatal(err)
 	}
-	_ = os.Mkdir(filepath.Join(dir, ".taviq"), 0o755)
-	_ = os.WriteFile(filepath.Join(dir, ".taviq", "runtime.json"), []byte(`{"tools":["codex","claude"],"modes":["agent"],"models":["z","a"]}`), 0o644)
+	path, err := runtimePath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = os.MkdirAll(filepath.Dir(path), 0o755)
+	_ = os.WriteFile(path, []byte(`{"tools":["codex","claude"],"modes":["agent"],"models":["z","a"]}`), 0o644)
 	msg := filepath.Join(dir, "msg")
 	_ = os.WriteFile(msg, []byte("X\n"), 0o644)
 	if err := hook(msg); err != nil {
@@ -68,8 +72,15 @@ func TestHookMultiValueSorted(t *testing.T) {
 }
 
 func TestObserveAccumulatesAndResetsOnHeadChange(t *testing.T) {
-	dir := enterRepo(t)
+	enterRepo(t)
 	configureGit()
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	path, err := runtimePath()
+	if err != nil {
+		t.Fatal(err)
+	}
 	_ = os.WriteFile("a", []byte("a"), 0o644)
 	_ = exec.Command("git", "add", "a").Run()
 	_ = exec.Command("git", "commit", "-m", "a").Run()
@@ -77,7 +88,7 @@ func TestObserveAccumulatesAndResetsOnHeadChange(t *testing.T) {
 	_ = observe("claude", "agent", "sonnet")
 	_ = observe("codex", "agent", "gpt-x")
 	_ = observe("claude", "agent", "sonnet")
-	b, _ := os.ReadFile(filepath.Join(dir, ".taviq", "runtime.json"))
+	b, _ := os.ReadFile(path)
 	var x Runtime
 	_ = json.Unmarshal(b, &x)
 	if strings.Join(x.Tools, ",") != "claude,codex" || strings.Join(x.Models, ",") != "gpt-x,sonnet" {
@@ -89,7 +100,7 @@ func TestObserveAccumulatesAndResetsOnHeadChange(t *testing.T) {
 	_ = exec.Command("git", "add", "b").Run()
 	_ = exec.Command("git", "commit", "-m", "b").Run()
 	_ = observe("kiro", "crew", "")
-	b, _ = os.ReadFile(filepath.Join(dir, ".taviq", "runtime.json"))
+	b, _ = os.ReadFile(path)
 	_ = json.Unmarshal(b, &x)
 	if x.BaseHead == oldHead || strings.Join(x.Tools, ",") != "kiro" || strings.Join(x.Modes, ",") != "crew" {
 		t.Fatalf("expected new HEAD window: %+v", x)
@@ -123,7 +134,9 @@ func TestObserveThenHookEndToEnd(t *testing.T) {
 
 func TestMachineInstallUninstallIsIdempotent(t *testing.T) {
 	config := t.TempDir()
+	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
+	t.Setenv("HOME", home)
 
 	if err := machineInstall(); err != nil {
 		t.Fatal(err)
@@ -274,11 +287,11 @@ func TestMachineInstallOwnsIntegrationAdapters(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"claude", "codex", "kiro"} {
-		b, err := os.ReadFile(filepath.Join(dir, name))
+		b, err := os.ReadFile(filepath.Join(dir, "taviq-"+name))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(string(b), "taviq observe "+name+" agent") {
+		if !strings.Contains(string(b), "' observe "+name+" agent") {
 			t.Fatalf("unexpected %s adapter: %s", name, b)
 		}
 	}
@@ -302,11 +315,135 @@ func TestKiroCrewAdapterUsesCrewMode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := os.ReadFile(filepath.Join(dir, "kiro-crew"))
+	b, err := os.ReadFile(filepath.Join(dir, "taviq-kiro-crew"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(b), "taviq observe kiro crew") {
+	if !strings.Contains(string(b), "' observe kiro crew") {
 		t.Fatalf("unexpected Kiro Crew adapter: %s", b)
+	}
+}
+
+func TestObserveIgnoresRepositoryWithoutMarker(t *testing.T) {
+	dir := enterRepo(t)
+	if err := observe("claude", "agent", ""); err != nil {
+		t.Fatal(err)
+	}
+	path, err := runtimePath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatal("unmarked repository must not record observations")
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".taviq")); !os.IsNotExist(err) {
+		t.Fatal("observe must not create files in the working tree")
+	}
+}
+
+func TestObserveKeepsWorkingTreeClean(t *testing.T) {
+	enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	if err := observe("claude", "agent", ""); err != nil {
+		t.Fatal(err)
+	}
+	out, err := exec.Command("git", "status", "--porcelain", "--untracked-files=all").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(string(out)) != "?? .taviq.yml" {
+		t.Fatalf("observe must not add untracked files: %q", out)
+	}
+}
+
+func TestHookIgnoresProvenanceTextOutsideTrailers(t *testing.T) {
+	dir := enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	msg := filepath.Join(dir, "msg")
+	body := "Change\n\n# ------------------------ >8 ------------------------\n# Do not modify or remove the line above.\ndiff --git a/x b/x\n+Taviq-Provenance: v1\n"
+	_ = os.WriteFile(msg, []byte(body), 0o644)
+	t.Setenv("TAVIQ_TOOL", "claude")
+	if err := hook(msg); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(msg)
+	if !strings.HasPrefix(string(b), "Change\n\nTaviq-Provenance: v1\nTaviq-Tools: claude\n\n# ---") {
+		t.Fatalf("trailer must be added before the scissors line: %q", b)
+	}
+	if err := hook(msg); err != nil {
+		t.Fatal(err)
+	}
+	again, _ := os.ReadFile(msg)
+	if string(again) != string(b) {
+		t.Fatalf("hook must not duplicate the trailer: %q", again)
+	}
+}
+
+func TestMachineHooksChainRepositoryHooks(t *testing.T) {
+	config := t.TempDir()
+	home := t.TempDir()
+	bin := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", config)
+	t.Setenv("HOME", home)
+	// Stand-in binary so the prepare-commit-msg shim does not run the test binary.
+	_ = os.WriteFile(filepath.Join(bin, "taviq"), []byte("#!/bin/sh\necho taviq >> \"$3\"\n"), 0o755)
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	dir := enterRepo(t)
+	configureGit()
+	if err := machineInstall(); err != nil {
+		t.Fatal(err)
+	}
+	hooks := filepath.Join(dir, ".git", "hooks")
+	_ = os.WriteFile(filepath.Join(hooks, "pre-commit"), []byte("#!/bin/sh\ntouch pre-commit-ran\n"), 0o755)
+	_ = os.WriteFile(filepath.Join(hooks, "commit-msg"), []byte("#!/bin/sh\necho local-commit-msg >> \"$1\"\n"), 0o755)
+	_ = os.WriteFile("a", []byte("a"), 0o644)
+	_ = exec.Command("git", "add", "a").Run()
+	if out, err := exec.Command("git", "commit", "-m", "a").CombinedOutput(); err != nil {
+		t.Fatalf("commit failed: %v %s", err, out)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "pre-commit-ran")); err != nil {
+		t.Fatal("repository pre-commit hook must still run")
+	}
+	msg, _ := exec.Command("git", "log", "-1", "--format=%B").Output()
+	for _, want := range []string{"taviq", "local-commit-msg"} {
+		if !strings.Contains(string(msg), want) {
+			t.Fatalf("missing %q in commit message: %q", want, msg)
+		}
+	}
+
+	_ = os.WriteFile(filepath.Join(hooks, "pre-commit"), []byte("#!/bin/sh\nexit 1\n"), 0o755)
+	_ = os.WriteFile("b", []byte("b"), 0o644)
+	_ = exec.Command("git", "add", "b").Run()
+	if err := exec.Command("git", "commit", "-m", "b").Run(); err == nil {
+		t.Fatal("a failing repository hook must still block the commit")
+	}
+	if err := machineUninstall(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDoctorReportsRepositoryHooksPathOverride(t *testing.T) {
+	config := t.TempDir()
+	home := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", config)
+	t.Setenv("HOME", home)
+	enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	if err := machineInstall(); err != nil {
+		t.Fatal(err)
+	}
+	_ = exec.Command("git", "config", "core.hooksPath", ".husky").Run()
+	x, err := diagnose()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if x["core_ready"].(bool) || x["checks"].(map[string]bool)["no_repository_hooks_path"] {
+		t.Fatalf("repository hooksPath bypasses the machine hook: %+v", x)
 	}
 }

@@ -35,7 +35,7 @@ GitHub Actions are optional and are not required for commit provenance recording
 
 ## AI execution metadata
 
-Tool integrations accumulate observed metadata in `.taviq/runtime.json`.
+Tool integrations accumulate observed metadata in `<git-dir>/taviq/runtime.json`, only in enabled repositories.
 
 Multiple tools, modes and models may be observed before one commit. Duplicate values are removed. Environment variables remain a backward-compatible fallback.
 
@@ -85,7 +85,7 @@ Basic v0.1 requires tool provenance, not model provenance. Model is enrichment o
 ## Dogfood acceptance test
 
 1. AI tool starts work in the repository.
-2. `.taviq/runtime.json` is created without developer input.
+2. `<git-dir>/taviq/runtime.json` is created without developer input.
 3. A normal Git commit receives the minimal Taviq trailer.
 4. The runtime file is not committed.
 5. A pull request triggers the Taviq Basic Provenance workflow.
