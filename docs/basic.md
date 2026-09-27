@@ -29,7 +29,7 @@ Remove repository enablement with:
 taviq deinit
 ```
 
-`init` preserves the previous `core.hooksPath`; `deinit` restores it.
+`init` creates only the declarative `.taviq.yml` marker. `deinit` removes that marker and transient runtime state. Repository-local hook files are not installed; commit integration is machine-level.
 
 GitHub Actions are optional and are not required for commit provenance recording.
 
