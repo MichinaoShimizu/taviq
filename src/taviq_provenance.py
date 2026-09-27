@@ -104,6 +104,18 @@ def build_envelope(session_state, hash_paths=False):
         "path_encoding":"sha256" if hash_paths else "plain",
     }
 
+def queue_envelope(session_state, home=DEFAULT_HOME, hash_paths=False):
+    envelope=build_envelope(session_state,hash_paths=hash_paths)
+    outbox=home/"outbox"
+    outbox.mkdir(parents=True,exist_ok=True)
+    path=outbox/f'{envelope["session_ref"]}.json'
+    path.write_text(json.dumps(envelope,ensure_ascii=False,separators=(",",":")))
+    return path
+
+def list_outbox(home=DEFAULT_HOME):
+    outbox=home/"outbox"
+    return sorted(outbox.glob("*.json")) if outbox.exists() else []
+
 def aggregate_coverage(changed_files, sessions):
     changed=set(changed_files or [])
     observed=set()
