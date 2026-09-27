@@ -40,7 +40,7 @@ Taviq = **AI Engineering Provenance Layer**.
 ## v0.2.x — Provenance quality
 
 - [ ] provenance schema versioning
-- [ ] commit trailer validation
+- [x] commit trailer validation (`taviq validate`)
 - [ ] tool / mode taxonomyを安定化
 - [ ] provenance coverage semanticsを固定
 - [x] provenance spoofing / trust model

@@ -126,6 +126,17 @@ AI toolの関与を観測できなかったcommitにはtrailerを付けません
 
 各値はcommit window内で観測された集合で、順序・割合・貢献度を表しません。
 
+## Validate
+
+Commit trailerがschemaどおりかを確認できます。
+
+```bash
+taviq validate                    # HEAD
+taviq validate origin/main..HEAD  # 範囲内の全commit
+```
+
+各commitを`recorded` / `unknown` / `invalid`に分類し、`invalid`があるときだけ失敗します。形式のチェックであり、真正性の検証ではありません。
+
 ## Privacy
 
 Commit provenanceには低機密な最小metadataだけを残します。

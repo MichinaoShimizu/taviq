@@ -165,6 +165,22 @@ A commit is `Unknown` when Taviq has no usable provenance evidence.
 
 Unknown does not mean Human-only.
 
+### Validation
+
+`taviq validate [<commit>|<range>]` checks commit trailers against this schema. It defaults to `HEAD`; a range such as `origin/main..HEAD` checks every commit in it.
+
+Each commit is reported as one of:
+
+- `recorded` — a well-formed v1 trailer block
+- `unknown` — no v1 Taviq trailer
+- `invalid` — v1 Taviq trailers that break the rules above: missing `Taviq-Provenance` or `Taviq-Tools`, a version other than `v1`, a repeated field, empty/whitespace/unsorted/duplicated values, an unsupported tool, mode or role, or a `Taviq-Agents` entry whose tool or model is not listed in `Taviq-Tools` / `Taviq-Models`
+
+The command exits non-zero only when a commit is `invalid`. `unknown` is not an error, because Unknown does not mean Human-only and missing evidence is expected.
+
+Other `Taviq-*` keys are ignored so that optional fields added later stay readable.
+
+Validation checks format only. A hand-written trailer can pass it, so a valid commit is still Recorded, never verified.
+
 ## 3. PR aggregation schema
 
 A PR aggregates commit provenance without converting overlapping sets into percentages.
