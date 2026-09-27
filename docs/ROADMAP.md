@@ -25,13 +25,13 @@
 
 ## Phase 2 — GitHub integration
 - [x] GitHub Check用summary生成
-- [ ] PR changed-files入力からcoverage report JSON生成
-- [ ] GitHub Actions / GitHub Appの認証方式決定
+- [x] PR changed-files入力からcoverage report JSON生成
+- [x] MVPはread-only GitHub Actions + Job Summary。Check Run書込は後続で決定
 - [ ] PRへTaviq AI Provenance Check Run投稿
 - [ ] commit/session evidenceをPRへ集約
 - [ ] tool / mode / model / coverage表示
 - [ ] low coverage時にEvidenceが弱いと表示
-- [ ] GitHub書込権限をLocal Collectorから分離
+- [x] GitHub書込権限をLocal Collectorから分離
 
 ## Phase 3 — Tool adapters
 ### Claude
