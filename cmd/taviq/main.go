@@ -35,6 +35,49 @@ func machineConfigDir() (string, error) {
 	return filepath.Join(base, "taviq"), nil
 }
 
+
+func globalHooksDir() (string, error) {
+	dir, err := machineConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "hooks"), nil
+}
+
+func installGlobalGitHook() error {
+	dir, err := globalHooksDir()
+	if err != nil {
+		return err
+	}
+	out, _ := exec.Command("git", "config", "--global", "--get", "core.hooksPath").Output()
+	current := strings.TrimSpace(string(out))
+	if current != "" && current != dir {
+		return fmt.Errorf("global core.hooksPath already owned by another integration: %s", current)
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	target := filepath.Join(dir, "prepare-commit-msg")
+	if err := os.WriteFile(target, []byte(hookScript), 0o755); err != nil {
+		return err
+	}
+	return exec.Command("git", "config", "--global", "core.hooksPath", dir).Run()
+}
+
+func uninstallGlobalGitHook() error {
+	dir, err := globalHooksDir()
+	if err != nil {
+		return err
+	}
+	out, _ := exec.Command("git", "config", "--global", "--get", "core.hooksPath").Output()
+	if strings.TrimSpace(string(out)) == dir {
+		_ = exec.Command("git", "config", "--global", "--unset", "core.hooksPath").Run()
+	}
+	_ = os.Remove(filepath.Join(dir, "prepare-commit-msg"))
+	_ = os.Remove(dir)
+	return nil
+}
+
 func machineInstall() error {
 	dir, err := machineConfigDir()
 	if err != nil {
@@ -48,12 +91,18 @@ func machineInstall() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, "state.json"), b, 0o644)
+	if err := os.WriteFile(filepath.Join(dir, "state.json"), b, 0o644); err != nil {
+		return err
+	}
+	return installGlobalGitHook()
 }
 
 func machineUninstall() error {
 	dir, err := machineConfigDir()
 	if err != nil {
+		return err
+	}
+	if err := uninstallGlobalGitHook(); err != nil {
 		return err
 	}
 	_ = os.Remove(filepath.Join(dir, "state.json"))
@@ -169,6 +218,13 @@ func observe(tool, mode, model string) error {
 }
 
 func hook(message string) error {
+	enabled, err := repoEnabled()
+	if err != nil {
+		return err
+	}
+	if !enabled {
+		return nil
+	}
 	r, err := root()
 	if err != nil {
 		return err
