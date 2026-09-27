@@ -35,6 +35,56 @@ Taviqが「何を言えるか」は、接続されたデータによって決ま
 
 単体データ・複数データの組み合わせ・AI価値の5段階・Evidence Level・不足データの扱いは [Data Capability Model](docs/data-capability-model.md) を正本とします。
 
+## なぜAI来歴が必要なのか
+
+AI利用率やToken数だけでは、AIが開発組織に価値を生んだかは分かりません。
+
+例えば「Claudeを80%の開発者が使っている」と分かっても、それだけでは次の問いには答えられません。
+
+- 開発は速くなったのか
+- Reviewや確認の負荷は減ったのか
+- 品質を維持できているのか
+- Claude / Codex / Kiroは、どの種類の仕事で違いがあるのか
+- 高価なモデルを使う価値はあるのか
+- AIへの投資を維持・拡大する判断材料はあるのか
+
+Taviqは、その分析の起点として **「どの変更に、どのAIツール・利用モードが関与したか」** という最小限の来歴をGitの変更へ結び付けます。
+
+```text
+AI来歴
+  │
+  ├── Delivery
+  │     Cycle Time / Review Wait / Work Flow
+  │
+  ├── Quality
+  │     CI / Failure / Incident
+  │
+  ├── Human Effort
+  │     確認 / 修正 / Rework
+  │
+  └── Cost
+        Token / Credit / 実費
+             │
+             ▼
+      Investment Decision
+```
+
+来歴そのものは生産性やROIを意味しません。**AI来歴は、AI利用と仕事の結果を正しく結び付けるためのJoin Key**です。
+
+接続するデータが増えると、Taviqは段階的に次の問いを扱えるようになります。
+
+| 段階 | 分かるようになること |
+| --- | --- |
+| AI来歴 + Git | AI関与が確認された変更は、どのようなDelivery傾向か |
+| + CI / Quality | 速さの違いが品質悪化を伴っていないか |
+| + Human Effort | 指示・確認・修正まで含めて仕事全体が軽くなったか |
+| + AI Cost | 時間価値、損益分岐、ROI試算 |
+| + Product / Business | 創出したキャパシティが顧客・事業成果へ使われたか |
+
+Taviqが目指すのは、**「AIを使っているか」の計測から、「どのAI投資が、どの仕事で、どの条件なら価値を生むのか」の判断へ進めること**です。
+
+そのため、Basicではまず低負荷・低リスクなAI来歴を正確に残し、必要になった組織だけが追加データを接続します。
+
 ## AI来歴（Provenance）
 
 Taviq Basicは、Claude / Codex / Kiroを使った開発の来歴を、サーバーなしでGitHubへ残せるようにします。
