@@ -10,12 +10,21 @@ def root(cwd="."):
     except Exception:
         return Path(cwd).resolve()
 
+def head(cwd="."):
+    try:
+        return subprocess.check_output(["git","-C",cwd,"rev-parse","HEAD"],text=True,stderr=subprocess.DEVNULL).strip()
+    except Exception:
+        return None
+
 def write(tool,mode=None,model=None,cwd="."):
     if tool not in ALLOWED_TOOLS: raise ValueError("unsupported tool")
-    p=root(cwd)/".taviq"/"runtime.json"; p.parent.mkdir(parents=True,exist_ok=True)
-    try: x=json.loads(p.read_text()) if p.exists() else {}
-    except Exception: x={}
-    x={"schema_version":1,"tools":list(x.get("tools",[])),"modes":list(x.get("modes",[])),"models":list(x.get("models",[]))}
+    repo=root(cwd); current_head=head(repo)
+    p=repo/".taviq"/"runtime.json"; p.parent.mkdir(parents=True,exist_ok=True)
+    try: previous=json.loads(p.read_text()) if p.exists() else {}
+    except Exception: previous={}
+    if previous.get("base_head") != current_head:
+        previous={"schema_version":1,"base_head":current_head,"tools":[],"modes":[],"models":[]}
+    x={"schema_version":1,"base_head":current_head,"tools":list(previous.get("tools",[])),"modes":list(previous.get("modes",[])),"models":list(previous.get("models",[]))}
     if tool not in x["tools"]: x["tools"].append(tool)
     if mode in ALLOWED_MODES and mode not in x["modes"]: x["modes"].append(mode)
     if model and model not in x["models"]: x["models"].append(model)
