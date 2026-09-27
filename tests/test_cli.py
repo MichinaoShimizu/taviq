@@ -22,6 +22,6 @@ class CliTests(unittest.TestCase):
     def test_help_exposes_stable_commands(self):
         x=self.run("--help")
         self.assertEqual(x.returncode,0)
-        for command in ("init","deinit","install","uninstall","doctor"): self.assertIn(command,x.stdout)
+        for command in ("init","deinit","install","uninstall","doctor","hook"): self.assertIn(command,x.stdout)
 
 if __name__=="__main__": unittest.main()
