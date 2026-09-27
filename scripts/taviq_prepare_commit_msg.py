@@ -4,7 +4,7 @@
 Designed to be called by a Git prepare-commit-msg hook or an agent integration.
 It never adds unknown values and never adds usage/cost/content.
 """
-import json, os, subprocess, sys
+import json, os, subprocess, sys, time
 from pathlib import Path
 
 ALLOWED_MODE={"assist","generate","agent","crew","mixed"}
@@ -22,9 +22,9 @@ def trailer_lines(env):
 
 def apply(path,env=os.environ):
     lines=trailer_lines(env)
-    if not lines: return False
+    if not lines: return {"applied":False,"elapsed_ms":(time.perf_counter()-started)*1000,"metadata_bytes":0}
     p=Path(path); text=p.read_text()
-    if "Taviq-Provenance:" in text: return False
+    if "Taviq-Provenance:" in text: return {"applied":False,"elapsed_ms":(time.perf_counter()-started)*1000,"metadata_bytes":0}
     suffix="\n" if text.endswith("\n") else "\n\n"
     p.write_text(text+suffix+"\n".join(lines)+"\n")
     return True
