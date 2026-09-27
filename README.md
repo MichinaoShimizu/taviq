@@ -196,6 +196,7 @@ Taviq Provenance + Cost         → 投資分析の入力
 - [Provenance Trust Model](docs/verified-provenance.md) — Recorded / Unknownと信頼境界
 - [Implementation Roadmap](docs/ROADMAP.md) — 現在地と今後の計画
 - [Architecture Decisions](docs/adr/README.md) — 変更時に守る設計判断
+- [Target Architecture](docs/target-architecture.md) — 1 binary / repo実装ゼロ / zero-touch組織導入の最終形
 - [Development Skill](.agents/skills/taviq-development/SKILL.md) — AI Agent / contributor向け開発チェック
 
 ## 開発時のチェック

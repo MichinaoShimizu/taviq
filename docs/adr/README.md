@@ -113,3 +113,14 @@ Migration rules:
 - Keep Python as compatibility/reference until Go parity and AI-tool integrations are dogfooded.
 - Remove repository-local Python fallback only after global binary distribution is proven in real use.
 - GitHub integration remains optional and separate from Core.
+
+
+## ADR-014 — Zero-touch organization adoption is the target architecture
+
+Taviq converges on one machine-installed Go binary, no repository-local implementation, machine-level Git and AI-tool integrations, and repository enablement controlled by a small marker or trusted organization policy.
+
+GitHub and other forge integrations remain optional.
+
+Repository-local hook implementation is transitional and should be removed once machine-level Git integration safely scopes itself to Taviq-enabled repositories.
+
+Organization policy may eliminate per-repository developer setup, but must preserve Taviq privacy and non-surveillance boundaries.
