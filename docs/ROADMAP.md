@@ -28,7 +28,7 @@
 - [x] PR changed-files入力からcoverage report JSON生成
 - [x] MVPはread-only GitHub Actions + Job Summary。Check Run書込は後続で決定
 - [ ] PRへTaviq AI Provenance Check Run投稿
-- [ ] commit/session evidenceをPRへ集約
+- [x] privacy-minimal provenance envelopeを定義\n- [ ] envelope transportをPR/CIへ接続\n- [ ] commit/session evidenceをPRへ集約
 - [ ] tool / mode / model / coverage表示
 - [ ] low coverage時にEvidenceが弱いと表示
 - [x] GitHub書込権限をLocal Collectorから分離
