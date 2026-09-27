@@ -86,6 +86,24 @@ def record(tool, raw, home=DEFAULT_HOME):
     append_event(event,home)
     return event
 
+def build_envelope(session_state, hash_paths=False):
+    paths=session_state.get("observed_files",[])
+    if hash_paths:
+        paths=[hashlib.sha256(p.encode()).hexdigest() for p in paths]
+    return {
+        "schema_version":1,
+        "kind":"taviq-provenance-envelope",
+        "session_ref":hashlib.sha256(session_state.get("session_id","unknown").encode()).hexdigest()[:24],
+        "repository":session_state.get("repository"),
+        "branch":session_state.get("branch"),
+        "commit_sha":session_state.get("commit_sha"),
+        "tool":session_state.get("tool"),
+        "mode":session_state.get("mode"),
+        "model":session_state.get("model"),
+        "observed_files":paths,
+        "path_encoding":"sha256" if hash_paths else "plain",
+    }
+
 def aggregate_coverage(changed_files, sessions):
     changed=set(changed_files or [])
     observed=set()
