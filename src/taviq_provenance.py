@@ -41,6 +41,26 @@ def sanitize(value):
             out[key]=v
     return out
 
+def session_file(session_id, home=DEFAULT_HOME):
+    key=hashlib.sha256((session_id or "unknown").encode()).hexdigest()[:24]
+    return home/"sessions"/f"{key}.json"
+
+def update_session(event, home=DEFAULT_HOME):
+    sid=event.get("execution",{}).get("session_id")
+    if not sid:
+        return None
+    path=session_file(sid,home); path.parent.mkdir(parents=True,exist_ok=True)
+    state=json.loads(path.read_text()) if path.exists() else {"session_id":sid,"observed_files":[]}
+    observed=event.get("change",{}).get("observed_file")
+    if observed and observed not in state["observed_files"]:
+        state["observed_files"].append(observed)
+    state["repository"]=event.get("context",{}).get("repository")
+    state["branch"]=event.get("context",{}).get("branch")
+    state["commit_sha"]=event.get("context",{}).get("commit_sha")
+    state["updated_at"]=event.get("event",{}).get("occurred_at")
+    path.write_text(json.dumps(state,ensure_ascii=False,separators=(",",":")))
+    return state
+
 def append_event(event, home=DEFAULT_HOME):
     day=datetime.now(timezone.utc).strftime("%Y-%m-%d")
     path=home/"events"/f"{day}.jsonl"
