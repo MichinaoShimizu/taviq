@@ -4,7 +4,7 @@
 Designed to be called by a Git prepare-commit-msg hook or an agent integration.
 It never adds unknown values and never adds usage/cost/content.
 """
-import os, sys
+import json, os, subprocess, sys
 from pathlib import Path
 
 ALLOWED_MODE={"assist","generate","agent","crew","mixed"}
