@@ -147,7 +147,6 @@ func TestObserveThenHookEndToEnd(t *testing.T) {
 		}
 	}
 }
-\n
 func TestMachineInstallUninstallIsIdempotent(t *testing.T) {
 	config := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
