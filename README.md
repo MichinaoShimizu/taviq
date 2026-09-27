@@ -29,6 +29,12 @@ AI reporting follows the same chain. Adoption, generated-code share, or token us
 - AI delivery comparison: AI-involved vs non-AI changes with provenance coverage
 - Guardrails: metrics describe the delivery system, not individual performance; observational comparisons are not causal estimates
 
+## 設計原則
+
+Taviqが「何を言えるか」は、接続されたデータによって決まります。GitHubだけからAI ROIや事業成果を推測しません。
+
+単体データ・複数データの組み合わせ・AI価値の5段階・Evidence Level・不足データの扱いは [Data Capability Model](docs/data-capability-model.md) を正本とします。
+
 ## Quick start
 
 Export pull requests with GitHub CLI:
