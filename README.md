@@ -85,6 +85,41 @@ Taviqが目指すのは、**「AIを使っているか」の計測から、「�
 
 そのため、Basicではまず低負荷・低リスクなAI来歴を正確に残し、必要になった組織だけが追加データを接続します。
 
+## Zero-AI-overhead by design
+
+Taviq Basicは、AI利用を測定するために追加のAI利用を発生させないことを設計原則とします。
+
+来歴記録のためにLLMへ質問したり、コードをAIで再解析したりしません。通常経路は、tool hookが最小metadataを書き、Git hookとGitHub Actionsが決定的な処理で集計するだけです。
+
+```text
+AI session
+   ↓
+tool hook
+   ↓
+数十〜数百byteのruntime metadata
+   ↓
+Git commit trailer
+   ↓
+GitHub Actions aggregation
+```
+
+### Basicの目標
+
+| Overhead | 目標 |
+| --- | ---: |
+| 追加AI API call | **0** |
+| 追加AI token | **0** |
+| 追加AI credit | **0** |
+| 開発者の都度入力 | **0** |
+| Local hook latency | **50ms未満を目標** |
+| Git metadata | **1KB未満 / commitを目標** |
+
+実測していない性能値を達成済みとは表現しません。Latencyやmetadata sizeはdogfood時に測定し、目標を満たしているか確認します。
+
+Skillは通常の計測経路ではなくfallback / setup / measurement guardrailとして扱います。Basicの通常経路は **Hook > Skill** とし、来歴記録のためだけにAgentの推論やcontext消費を増やさない設計にします。
+
+Taviq自身のオーバーヘッドも測定対象です。AI開発の生産性を測るための仕組みが、開発生産性やAIコストを悪化させないことを継続的に確認します。
+
 ## AI来歴（Provenance）
 
 Taviq Basicは、Claude / Codex / Kiroを使った開発の来歴を、サーバーなしでGitHubへ残せるようにします。
