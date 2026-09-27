@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -91,7 +92,7 @@ func TestObserveAccumulatesAndResetsOnHeadChange(t *testing.T) {
 	b, _ := os.ReadFile(path)
 	var x Runtime
 	_ = json.Unmarshal(b, &x)
-	if strings.Join(x.Tools, ",") != "claude,codex" || strings.Join(x.Models, ",") != "gpt-x,sonnet" {
+	if p := x.provenance(); strings.Join(p.Tools, ",") != "claude,codex" || strings.Join(p.Models, ",") != "gpt-x,sonnet" || len(x.Observations) != 2 {
 		t.Fatalf("unexpected runtime: %+v", x)
 	}
 	oldHead := x.BaseHead
@@ -101,8 +102,9 @@ func TestObserveAccumulatesAndResetsOnHeadChange(t *testing.T) {
 	_ = exec.Command("git", "commit", "-m", "b").Run()
 	_ = observe("kiro", "crew", "")
 	b, _ = os.ReadFile(path)
+	x = Runtime{}
 	_ = json.Unmarshal(b, &x)
-	if x.BaseHead == oldHead || strings.Join(x.Tools, ",") != "kiro" || strings.Join(x.Modes, ",") != "crew" {
+	if p := x.provenance(); x.BaseHead == oldHead || strings.Join(p.Tools, ",") != "kiro" || strings.Join(p.Modes, ",") != "crew" {
 		t.Fatalf("expected new HEAD window: %+v", x)
 	}
 }
@@ -153,6 +155,68 @@ func TestAgentRolesBecomeAgentsTrailer(t *testing.T) {
 	for _, want := range []string{
 		"Taviq-Models: gpt-x,model-main,model-sub",
 		"Taviq-Agents: claude:main=model-main,claude:sub,claude:sub=model-sub",
+	} {
+		if !strings.Contains(string(b), want) {
+			t.Fatalf("missing %s in:\n%s", want, b)
+		}
+	}
+}
+
+func TestRuntimeStoresOnlyObservations(t *testing.T) {
+	enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	_ = observeAgent("claude", "agent", "model-sub", "sub")
+	_ = observeAgent("claude", "agent", "model-sub", "sub")
+	_ = observe("codex", "agent", "gpt-x")
+	path, err := runtimePath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(path)
+	var raw map[string]any
+	_ = json.Unmarshal(b, &raw)
+	for _, derived := range []string{"tools", "modes", "models", "agents"} {
+		if _, ok := raw[derived]; ok {
+			t.Fatalf("derived field %q stored in runtime: %s", derived, b)
+		}
+	}
+	var x Runtime
+	_ = json.Unmarshal(b, &x)
+	want := []Observation{
+		{Tool: "claude", Mode: "agent", Model: "model-sub", Role: "sub"},
+		{Tool: "codex", Mode: "agent", Model: "gpt-x"},
+	}
+	if x.SchemaVersion != runtimeSchemaVersion || !reflect.DeepEqual(x.Observations, want) {
+		t.Fatalf("unexpected runtime: %s", b)
+	}
+}
+
+func TestObserveKeepsLegacyRuntimeEvidence(t *testing.T) {
+	dir := enterRepo(t)
+	if err := initMarker(); err != nil {
+		t.Fatal(err)
+	}
+	path, err := runtimePath()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = os.MkdirAll(filepath.Dir(path), 0o755)
+	legacy := `{"schema_version":1,"base_head":"` + gitHead() + `","tools":["kiro"],"modes":["crew"],"models":["m1"],"agents":["claude:main=m1"]}`
+	_ = os.WriteFile(path, []byte(legacy), 0o644)
+	_ = observe("codex", "agent", "gpt-x")
+	msg := filepath.Join(dir, "msg")
+	_ = os.WriteFile(msg, []byte("Change\n"), 0o644)
+	if err := hook(msg); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(msg)
+	for _, want := range []string{
+		"Taviq-Tools: codex,kiro",
+		"Taviq-Modes: agent,crew",
+		"Taviq-Models: gpt-x,m1",
+		"Taviq-Agents: claude:main=m1",
 	} {
 		if !strings.Contains(string(b), want) {
 			t.Fatalf("missing %s in:\n%s", want, b)

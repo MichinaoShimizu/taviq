@@ -37,7 +37,7 @@ GitHub Actions are optional and are not required for commit provenance recording
 
 Tool integrations accumulate observed metadata in `<git-dir>/taviq/runtime.json`, only in enabled repositories.
 
-Multiple tools, modes and models may be observed before one commit. Duplicate values are removed. Environment variables remain a backward-compatible fallback.
+Multiple tools, modes and models may be observed before one commit. Runtime keeps one deduplicated set of observations; the trailer fields are derived from it. Environment variables remain a backward-compatible fallback.
 
 The resulting commit message uses the v1 multi-value schema:
 

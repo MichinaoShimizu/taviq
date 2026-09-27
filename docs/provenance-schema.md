@@ -22,13 +22,23 @@ Runtime metadata is ephemeral and lives inside the Git directory (per worktree),
 
 ```json
 {
-  "schema_version": 1,
-  "tools": ["claude", "codex"],
-  "modes": ["agent"],
-  "models": ["model-a", "model-b"],
-  "agents": ["claude:main=model-a", "claude:sub=model-b", "codex:main"]
+  "schema_version": 2,
+  "base_head": "<HEAD commit>",
+  "observations": [
+    {"tool": "claude", "mode": "agent", "model": "model-a", "role": "main"},
+    {"tool": "claude", "mode": "agent", "model": "model-b", "role": "sub"},
+    {"tool": "codex", "mode": "agent", "role": "main"}
+  ]
 }
 ```
+
+Runtime stores one deduplicated set of observations and nothing else. Each observation is one `(tool, mode, model, role)` combination the integration exposed; a field the integration did not expose is omitted, never filled from another observation. The commit fields below (`tools`, `modes`, `models`, `agents`) are projections of this one set computed when the trailer is prepared, so they cannot disagree with each other.
+
+Runtime schema version 1 stored the four projections as parallel lists. A version 1 file left by an older Taviq is still read for the rest of its window: its lists are merged into the projections as they are, without inventing tool/model/role associations they did not record.
+
+Downgrading to an older Taviq in the middle of a window is not supported for the evidence already collected: an older binary does not read `observations`, so observations made before the downgrade are left out of that commit. The commit then records only what the older binary itself observed, or is Unknown. It never records evidence that was not observed.
+
+The sections below define the projected fields, which are what commit trailers carry.
 
 ### tools
 
@@ -96,7 +106,7 @@ Does not mean:
 - that a subagent changed any file of the final commit
 - relative contribution of main agents and subagents
 
-`models` remains the union of all observed models, so readers that ignore `agents` see the same v1 meaning.
+`tools` and `models` remain the union over all observations, so readers that ignore `agents` see the same v1 meaning. Because all fields are projections of the same observations, every tool and model named in `agents` also appears in `tools` and `models`; that overlap is the v1-compatible summary, not independent evidence.
 
 ### accumulation
 
@@ -210,7 +220,7 @@ The same principle applies to multiple modes, models and agents (`agents` counts
 
 Basic uses a repository-local accumulation window bounded by the Git `HEAD` observed by tool integrations.
 
-Runtime stores `base_head` together with observed tools/modes/models.
+Runtime stores `base_head` together with the observations.
 
 - When another tool is observed and `HEAD` is unchanged, Taviq accumulates it into the same window.
 - When a successful commit changes `HEAD`, the next tool observation detects the new `HEAD` and starts a fresh window.
