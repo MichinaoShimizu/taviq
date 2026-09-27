@@ -20,7 +20,7 @@ for p in text_files():
     except UnicodeDecodeError: continue
     rel=p.relative_to(ROOT)
 
-    if "\\n" in s:
+    if p.suffix in {".md",".yml",".yaml"} and "\\n" in s:
         fail(rel,'contains literal \\n; likely escaped-newline corruption')
 
     if p.suffix==".md":
