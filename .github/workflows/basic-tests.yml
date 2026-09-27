@@ -25,7 +25,7 @@ jobs:
         run: python3 -m compileall -q scripts
       - name: Go format check
         run: |
-          files="$(gofmt -l cmd/taviq)"
+          gofmt -d cmd/taviq || true\n          files="$(gofmt -l cmd/taviq)"
           test -z "$files" || { echo "gofmt required:"; echo "$files"; exit 1; }
       - name: Go Core tests
         run: go test ./cmd/taviq
