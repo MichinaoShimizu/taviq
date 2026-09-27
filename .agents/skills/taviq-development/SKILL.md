@@ -46,3 +46,9 @@ Look for new secrets, network calls, permissions, durable sensitive data, identi
 ### Release reviewer
 
 Check README/docs links, schema compatibility, install/uninstall behavior, CI, overhead budget and roadmap consistency.
+
+
+## Repository editing safety
+
+- Do not modify GitHub Actions YAML by escaped-newline string insertion/replacement.
+- When structurally changing a workflow, rewrite the relevant YAML block/file with real newlines and let Contract Lint validate it.
