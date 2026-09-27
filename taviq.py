@@ -122,6 +122,36 @@ def monthly_conclusion(cur,prev,ai=None):
     headline = statements[0] if statements else "現時点では結論に必要なデータが不足しています。"
     return headline,statements,unknowns,decisions
 
+def ai_investment_narrative(ai):
+    if not ai:
+        return None
+    r = ai_roi(ai)
+    scenarios = ai_roi_scenarios(ai)
+    hours = float(ai.get("net_hours_saved", 0))
+    break_even = scenarios["break_even_hours"]
+    value_relation = "上回っています" if r["net"] > 0 else "下回っています"
+    status = "追加確認が必要"
+    summary = (
+        f"AI費用 ¥{r['cost']:,.0f} に対して、正味 {hours:.1f} 時間、"
+        f"¥{r['value']:,.0f} 相当のキャパシティ価値が生まれたと推計されています。"
+        f"時間価値ベースでは投資額を{value_relation}。"
+    )
+    limitation = (
+        "一方、品質への影響、創出された時間の再配分先、顧客・事業成果、"
+        "実際の現金効果はまだ確認できていません。"
+    )
+    action = (
+        "現状の利用を継続しながら品質と再配分先を確認し、"
+        "事前に合意した判断条件を満たすかで次の投資判断を行います。"
+    )
+    checks = [
+        "品質・安全性・担当者負荷が合意した閾値内か",
+        ("正味削減時間が損益分岐を上回るか" if break_even is None else f"正味削減時間が損益分岐 {break_even:.1f}h を上回るか"),
+        f"創出された {hours:.1f}h がどこへ再配分されたか",
+        "再配分先で顧客・事業成果が確認できたか",
+    ]
+    return {"status":status,"summary":summary,"limitation":limitation,"action":action,"checks":checks}
+
 def management_model(cur, prev, ai=None):
     refs = [("PR数", str(cur["pr_count"])), ("初回レビュー", fmt(cur["review"], "h")), ("PRサイズ", fmt(cur["size"], "行"))]
     if ai:
@@ -160,7 +190,7 @@ def html_report(title,since,until,cur,prev,rows,ai=None,compare=None):
     flow_html='<div class="removed-flow"><div><span>INVEST</span><strong>Engineering</strong></div><b>→</b><div><span>UNLOCK</span><strong>Capacity</strong></div><b>→</b><div><span>SHIP</span><strong>デリバリー</strong></div><b>→</b><div><span>PROTECT</span><strong>品質</strong></div><b>→</b><div><span>CREATE</span><strong>Business value</strong></div></div>'
     return f'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>{html.escape(title)}</title><style>
 :root{{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,sans-serif;background:#080b10;color:#f5f7fa;--panel:#10151d;--line:#27303b;--muted:#8e9baa;--accent:#d7ff64}}*{{box-sizing:border-box}}body{{max-width:1180px;margin:auto;padding:56px 32px;background:radial-gradient(circle at 80% 0%,#18221d 0,transparent 32%)}}.brand{{display:inline-flex;align-items:center;gap:10px;letter-spacing:.2em;font-weight:900;font-size:.85rem}}.brand:before{{content:"";width:10px;height:10px;border-radius:3px;background:var(--accent);box-shadow:0 0 24px var(--accent)}}h1{{font-size:clamp(2.4rem,6vw,4.8rem);line-height:.95;letter-spacing:-.06em;max-width:850px;margin:20px 0 14px}}h2{{font-size:1.45rem;letter-spacing:-.025em;margin:8px 0 18px}}.meta,small,.eyebrow{{color:var(--muted)}}.eyebrow{{font-size:.72rem;letter-spacing:.16em}}section{{margin-top:52px}}.executive{{padding:28px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#151b24,var(--panel));box-shadow:0 24px 80px rgba(0,0,0,.22)}}.exec-grid,.cards{{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:22px}}.exec-grid{{grid-template-columns:1fr 1fr 2fr}}.exec-grid>div,.card{{padding:20px;background:#0b1016;border:1px solid #202833;border-radius:14px}}.exec-grid span,.exec-grid small,.card span,.card small,.decision span{{display:block;color:var(--muted)}}.exec-grid strong{{display:block;margin:8px 0;font-size:1.1rem}}.card strong{{display:block;font-size:clamp(1.55rem,3vw,2.4rem);letter-spacing:-.04em;margin:10px 0}}.decision{{margin-top:18px;padding:18px 20px;border-left:4px solid var(--accent);background:#0b1016;border-radius:0 12px 12px 0}}.decision strong{{display:block;margin-top:8px}}.flow{{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1fr;align-items:center;gap:10px;margin:30px 0 8px}}.flow div{{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}}.flow span{{display:block;color:var(--muted);font-size:.65rem;letter-spacing:.12em}}.flow strong{{display:block;margin-top:6px}}.flow b{{color:var(--accent)}}table{{width:100%;border-collapse:separate;border-spacing:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}}th,td{{padding:14px 16px;text-align:left;border-bottom:1px solid var(--line)}}th{{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:#0c1117}}tr:last-child td{{border-bottom:0}}.guard{{border:1px solid var(--line);border-left:4px solid var(--accent);padding:18px 22px;background:var(--panel);border-radius:0 14px 14px 0}}@media(max-width:760px){{body{{padding:32px 18px}}.cards,.exec-grid,.flow{{grid-template-columns:1fr}}.flow b{{display:none}}table{{display:block;overflow-x:auto}}}}@media print{{:root{{color-scheme:light;background:white;color:black}}body{{padding:10mm;background:white}}}}
-</style></head><body><div class="brand">TAVIQ</div><h1>{html.escape(title)}</h1><div class="meta">Engineering Intelligence · {since.date()} – {until.date()}</div>{conclusion_html}{management_html}<section><div class="eyebrow">開発組織向け</div><h2>デリバリー system signals</h2><div class="cards">{cards_html}</div></section>{ai_html}{cmp_html}<section><div class="eyebrow">診断詳細</div><h2>リポジトリ別内訳</h2><table><tr><th>Repository</th><th>PRs</th><th>Cycle</th><th>Review</th><th>Size</th></tr>{row_html}</table></section><section class="guard"><strong>読み方</strong><p>これらの指標は開発システムを改善するために使い、個人の順位付けには使いません。変化は調査の手掛かりであり、原因を証明するものではありません。</p></section></body></html>'''/usr/bin/env python3
+</style></head><body><div class="brand">TAVIQ</div><h1>{html.escape(title)}</h1><div class="meta">Engineering Intelligence · {since.date()} – {until.date()}</div>{ai_decision_html}{conclusion_html}{management_html}<section><div class="eyebrow">開発組織向け</div><h2>デリバリー system signals</h2><div class="cards">{cards_html}</div></section>{ai_html}{cmp_html}<section><div class="eyebrow">診断詳細</div><h2>リポジトリ別内訳</h2><table><tr><th>Repository</th><th>PRs</th><th>Cycle</th><th>Review</th><th>Size</th></tr>{row_html}</table></section><section class="guard"><strong>読み方</strong><p>これらの指標は開発システムを改善するために使い、個人の順位付けには使いません。変化は調査の手掛かりであり、原因を証明するものではありません。</p></section></body></html>'''/usr/bin/env python3
 from __future__ import annotations
 import argparse, html, json, statistics
 from datetime import datetime, timezone
