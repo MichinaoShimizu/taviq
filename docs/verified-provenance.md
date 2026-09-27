@@ -1,39 +1,32 @@
-# Verified Provenance Threat Model
+# Provenance Trust Model
 
-## Goal
+## Principle
+Taviq Basic does not introduce a custom signing secret, key-management system, or proprietary verification protocol.
 
-Taviq distinguishes three claims:
-1. Recorded — provenance metadata exists.
-2. Taviq-verified — metadata was produced/signed by a configured Taviq installation and has not been modified.
-3. Vendor-attested — the AI vendor/runtime itself cryptographically attests the execution.
+Basic records explicit provenance metadata and reports two core states:
+- Recorded — Taviq provenance metadata is present.
+- Unknown — provenance evidence is absent.
 
-v0.1 targets level 2. Level 2 is not proof from Claude, Codex, Kiro, or another vendor.
+Recorded does not mean cryptographically verified and does not mean the AI vendor independently attested the execution.
 
-## Threats
+## Why
+Adding a custom shared secret would create new operational and security risks: secret distribution, CI secret exposure, rotation, compromise handling, verifier/signing ambiguity, and false confidence from a Verified label.
 
-### Manual trailer spoofing
-A developer can type Taviq metadata manually. Unsigned trailers remain recorded/unverified.
+Taviq Basic prioritizes zero server, zero secret, low privilege, and transparent evidence semantics.
 
-### Trailer modification
-A signed provenance payload that is edited must fail verification.
+## Spoofing
+A commit trailer can be manually created or edited. Basic therefore treats trailers as recorded metadata, not tamper-proof evidence.
 
-### Key theft
-Anyone with an HMAC key can create Taviq-verified records. Keys must be scoped, protected and rotatable.
+Do not display Verified by Taviq, Verified by Claude, Verified by Codex, or Verified by Kiro from Basic trailers.
 
-### Compromised local machine
-A compromised workstation can invoke a local signer with false metadata. v0.1 does not solve this. Taviq-verified means accepted by the configured Taviq signer, not vendor-independent proof.
+## Future stronger provenance
+If customers require cryptographic verification, Taviq should first evaluate established signing and software supply-chain attestation mechanisms instead of inventing its own key system.
 
-### Replay
-Signatures must include repository scope and a unique provenance reference. Strong immutable commit-bound attestations remain future work because signing data embedded in the commit message has a commit-hash circularity problem.
+Candidate directions include signed Git identities/objects, Sigstore-style signing, SLSA/in-toto style provenance, and GitHub-supported artifact attestations where they fit the actual execution model.
 
-## UI language
+Any future mechanism must preserve the distinction between:
+- Taviq recorded metadata
+- cryptographically verifiable producer identity
+- vendor-attested AI execution
 
-Allowed: Verified by Taviq; Recorded, unverified; Unknown; Vendor-attested only when such an attestation exists.
-
-Do not say Verified by Claude when only Taviq signed it. Do not say AI definitely wrote this code. Unknown is not human-only.
-
-## v0.1 cryptography
-
-HMAC-SHA256 is acceptable only as an MVP integrity mechanism. It is symmetric, so a verifier holding the secret can also sign.
-
-Production direction: asymmetric signatures or established software supply-chain attestation formats, with signing capability separated from CI verification.
+Unknown must never be converted to human-only by inference.
