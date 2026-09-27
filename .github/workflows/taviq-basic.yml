@@ -27,7 +27,9 @@ jobs:
           print(f'**Unknown:** {r["unknown"]} commits')
           if r['tools']: print('**Tools:** '+', '.join(f'{k} ({v})' for k,v in r['tools'].items()))
           if r['modes']: print('**Modes:** '+', '.join(f'{k} ({v})' for k,v in r['modes'].items()))
-          if r['models']: print('**Models:** '+', '.join(f'{k} ({v})' for k,v in r['models'].items()))\n          print(f'**Multi-tool commits:** {r["multi_tool_commits"]}')
+          if r['models']:
+              print('**Models:** '+', '.join(f'{k} ({v})' for k,v in r['models'].items()))
+          print(f'**Multi-tool commits:** {r["multi_tool_commits"]}')
           print()
           print('Unknown commits are not classified as human-only.')
           PY
