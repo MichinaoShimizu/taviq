@@ -35,7 +35,6 @@ func machineConfigDir() (string, error) {
 	return filepath.Join(base, "taviq"), nil
 }
 
-
 func globalHooksDir() (string, error) {
 	dir, err := machineConfigDir()
 	if err != nil {
