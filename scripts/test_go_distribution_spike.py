@@ -25,7 +25,7 @@ with tempfile.TemporaryDirectory() as td:
     subprocess.check_call(["git","init",str(repo)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 
     # The external repository intentionally contains no Taviq source files.
-    subprocess.check_call([str(linux),"init"],cwd=repo)
+    (repo/".taviq.yml").write_text("version: 1\\n")\n    subprocess.check_call([str(linux),"init"],cwd=repo)
 
     msg=repo/"message"
     msg.write_text("External checkout test\n")
