@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 DEFAULT_HOME = Path(os.environ.get("TAVIQ_HOME", Path.home() / ".taviq"))
-ALLOWED_TOP = {"session_id","hook_event_name","event_name","model","model_name","cwd","tool","provider","usage"}
+ALLOWED_TOP = {"session_id","hook_event_name","event_name","model","model_name","cwd","tool","provider","usage","file_path"}
 SENSITIVE_KEYS = {"prompt","response","messages","content","tool_input","tool_output","diff","source","code"}
 
 def now():
@@ -60,6 +60,7 @@ def record(tool, raw, home=DEFAULT_HOME):
         "interaction":{"surface":"cli"},
         "execution":{"environment":"local","session_id":safe.get("session_id")},
         "usage":safe.get("usage",{}),
+        "change":{"observed_file":safe.get("file_path")},
         "provenance":{"source":"agent_event","confidence":"confirmed" if safe.get("session_id") else "partial"},
     }
     append_event(event,home)
