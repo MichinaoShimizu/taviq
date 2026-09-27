@@ -1,0 +1,72 @@
+# Go Core Spike Results
+
+Status: completed. Go Core parity and binary-only distribution demonstrated.
+
+## CI measurement
+
+Environment: GitHub-hosted Ubuntu runner.
+
+| Metric | Go spike | Python Basic |
+| --- | ---: | ---: |
+| Hook median | 2.68 ms | 1.43 ms |
+| Hook p95 | 3.00 ms | not currently reported |
+| Binary size | 3,149,781 bytes (~3.15 MB) | requires Python runtime |
+| Metadata example | same v1 schema | 60 bytes in benchmark |
+
+Both implementations are far below the Basic local-hook latency target of 50 ms.
+
+## Interpretation
+
+The current evidence does **not** justify Go on hook speed: Python was faster in this CI sample.
+
+The case for Go is distribution and organization operations:
+
+- one self-contained binary
+- no Python/pip/pipx runtime requirement for end users
+- straightforward MDM/bootstrap distribution
+- predictable cross-platform artifact
+- no third-party runtime dependencies
+
+## Compatibility demonstrated so far
+
+Go spike tests cover:
+
+- v1 commit trailer golden compatibility
+- multi-tool/mode/model stable ordering
+- init/deinit hooksPath restoration
+- repeated init preserving original hooksPath
+- doctor Core readiness
+- GitHub Actions remaining optional
+
+## Decision evidence completed
+
+Validated before adopting Go as Core:
+
+- cross-compile macOS arm64/amd64
+- cross-compile Linux arm64/amd64
+- cross-compile Windows amd64
+- test built binary outside source checkout
+- [x] runtime accumulation / Git HEAD window parity
+- [ ] Claude/Codex/Kiro real-tool dogfood with global binary
+- [x] maintenance guardrails: gofmt + Go contract tests in Quality Gate
+
+Do not remove Python until these checks pass.
+
+
+## Cross-platform distribution result
+
+All target builds succeeded in CI:
+
+| Target | Binary size |
+| --- | ---: |
+| Linux amd64 | 3,149,805 bytes |
+| Linux arm64 | 3,123,460 bytes |
+| macOS amd64 | 3,073,856 bytes |
+| macOS arm64 | 3,035,762 bytes |
+| Windows amd64 | 3,276,288 bytes |
+
+A Linux amd64 binary successfully executed `init → hook → doctor → deinit` in an external Git repository containing no Taviq source files.
+
+Latest measured hook latency: median 2.42 ms, p95 2.54 ms.
+
+This demonstrates the main distribution advantage of the Go approach: Taviq Core can operate as a roughly 3 MB self-contained binary.

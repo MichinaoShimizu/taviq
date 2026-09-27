@@ -85,3 +85,31 @@ v0.1 may execute the commit hook from repository-local code.
 Organization-ready distribution should move execution to a machine-installed or organization-managed Taviq CLI so repositories do not contain duplicated implementation.
 
 Changing runner location must not silently change provenance schema or field semantics.
+
+
+## ADR-013 — Go is the target implementation for distributable Taviq Core
+
+Decision: Go is the implementation of Taviq Core. Python is not a Core runtime dependency.
+
+Evidence from the Go Core spike:
+
+- v1 provenance golden compatibility passes.
+- multi-tool/mode/model set semantics pass.
+- Git HEAD accumulation-window parity passes.
+- init/deinit preserves existing `core.hooksPath`.
+- doctor keeps GitHub Actions optional.
+- Linux/macOS/Windows cross-builds succeed without third-party runtime dependencies.
+- a built Linux binary passes `init → hook → doctor → deinit` in an external repository containing no Taviq source.
+- binary size is roughly 3.0–3.3 MB.
+- measured hook latency is roughly 2–3 ms, well below the 50 ms Basic budget.
+
+Python was faster in the measured hook microbenchmark, so performance is not the reason for this decision.
+
+The reason is distribution: a small self-contained binary materially simplifies developer and organization rollout compared with requiring Python/pip/pipx/venv management.
+
+Migration rules:
+
+- Do not silently change v1 provenance semantics.
+- Keep Python as compatibility/reference until Go parity and AI-tool integrations are dogfooded.
+- Remove repository-local Python fallback only after global binary distribution is proven in real use.
+- GitHub integration remains optional and separate from Core.

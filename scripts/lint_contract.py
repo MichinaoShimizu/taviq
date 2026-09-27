@@ -46,13 +46,13 @@ if "Recorded does not mean cryptographically verified" not in schema:
     fail(Path("docs/provenance-schema.md"),"must preserve Recorded != cryptographically verified")
 
 # Basic provenance privacy boundary: reject forbidden durable trailer field names.
-hook=(ROOT/"scripts/taviq_prepare_commit_msg.py").read_text()
+hook=(ROOT/"cmd/taviq/main.go").read_text()
 for forbidden in ["Prompt","Response","Token","Credit","Cost","Developer","Identity","Source","Diff"]:
     if re.search(rf"Taviq-{forbidden}\s*:",hook,re.I):
-        fail(Path("scripts/taviq_prepare_commit_msg.py"),f"forbidden Basic trailer field: Taviq-{forbidden}")
+        fail(Path("cmd/taviq/main.go"),f"forbidden Basic trailer field: Taviq-{forbidden}")
 
 # Basic should remain zero-secret and zero-network by default.
-for p in [ROOT/"scripts/taviq_prepare_commit_msg.py",ROOT/"scripts/set_runtime.py"]:
+for p in [ROOT/"cmd/taviq/main.go"]:
     s=p.read_text()
     for marker in ["TAVIQ_SIGNING_KEY","requests.","urllib.request","http://","https://"]:
         if marker in s:

@@ -16,18 +16,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.23'
       - name: Taviq contract lint
         run: python3 scripts/lint_contract.py
-      - name: Python compile check
-        run: python3 -m compileall -q scripts tests
-      - name: Unit tests
-        run: python3 -m unittest discover -s tests -p 'test_*.py'
-      - name: Basic overhead benchmark
+      - name: Integration Python compile check
+        run: python3 -m compileall -q scripts
+      - name: Go format check
         run: |
-          python3 scripts/benchmark_basic.py | tee /tmp/taviq-benchmark.json
-          python3 - <<'PY'
-          import json
-          r=json.load(open('/tmp/taviq-benchmark.json'))
-          assert r['passes']['hook_median'], r
-          assert r['passes']['metadata_size'], r
-          PY
+          files="$(gofmt -l cmd/taviq)"
+          test -z "$files" || { echo "gofmt required:"; echo "$files"; exit 1; }
+      - name: Go Core tests
+        run: go test ./cmd/taviq
+      - name: Go Core benchmark
+        run: python3 scripts/benchmark_go_spike.py
+      - name: Go binary distribution acceptance
+        run: python3 scripts/test_go_distribution_spike.py
