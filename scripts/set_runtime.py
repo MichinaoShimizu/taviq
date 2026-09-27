@@ -3,14 +3,32 @@ import argparse, json, os, subprocess
 from pathlib import Path
 ALLOWED_TOOLS={"claude","codex","kiro"}
 ALLOWED_MODES={"assist","generate","agent","crew","mixed"}
+
 def root(cwd="."):
-    try:return Path(subprocess.check_output(["git","-C",cwd,"rev-parse","--show-toplevel"],text=True).strip())
-    except Exception:return Path(cwd).resolve()
-def write(tool,mode=None,model=None,cwd=".",reset=False):
+    try:
+        return Path(subprocess.check_output(["git","-C",cwd,"rev-parse","--show-toplevel"],text=True,stderr=subprocess.DEVNULL).strip())
+    except Exception:
+        return Path(cwd).resolve()
+
+def write(tool,mode=None,model=None,cwd="."):
     if tool not in ALLOWED_TOOLS: raise ValueError("unsupported tool")
-    x={"tool":tool}
-    if mode in ALLOWED_MODES:x["mode"]=mode
-    if model:x["model"]=model
-    p=root(cwd)/".taviq"/"runtime.json"; p.parent.mkdir(parents=True,exist_ok=True); p.write_text(json.dumps(x,separators=(",",":"))); return p
+    p=root(cwd)/".taviq"/"runtime.json"; p.parent.mkdir(parents=True,exist_ok=True)
+    try: x=json.loads(p.read_text()) if p.exists() else {}
+    except Exception: x={}
+    x={"schema_version":1,"tools":list(x.get("tools",[])),"modes":list(x.get("modes",[])),"models":list(x.get("models",[]))}
+    if tool not in x["tools"]: x["tools"].append(tool)
+    if mode in ALLOWED_MODES and mode not in x["modes"]: x["modes"].append(mode)
+    if model and model not in x["models"]: x["models"].append(model)
+    for k in ("tools","modes","models"): x[k]=sorted(set(x[k]))
+    p.write_text(json.dumps(x,separators=(",",":"))); return p
+
+def clear(cwd='.'):
+    p=root(cwd)/".taviq"/"runtime.json"
+    if p.exists(): p.unlink()
+
 if __name__=="__main__":
-    p=argparse.ArgumentParser();p.add_argument("--tool",required=True);p.add_argument("--mode");p.add_argument("--model");p.add_argument("--cwd",default=os.getcwd());p.add_argument("--reset",action="store_true");a=p.parse_args();write(a.tool,a.mode,a.model,a.cwd,a.reset)
+    p=argparse.ArgumentParser(); p.add_argument('--tool'); p.add_argument('--mode'); p.add_argument('--model'); p.add_argument('--cwd',default=os.getcwd()); p.add_argument('--clear',action='store_true'); a=p.parse_args()
+    if a.clear: clear(a.cwd)
+    else:
+        if not a.tool: raise SystemExit('--tool is required unless --clear is used')
+        write(a.tool,a.mode,a.model,a.cwd)
