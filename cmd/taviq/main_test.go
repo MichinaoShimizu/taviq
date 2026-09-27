@@ -53,9 +53,6 @@ func TestDoctorCoreDoesNotRequireGitHubActions(t *testing.T) {
 	dir:=t.TempDir()
 	if err:=exec.Command("git","init",dir).Run();err!=nil{t.Fatal(err)}
 	old,_:=os.Getwd();defer os.Chdir(old);os.Chdir(dir)
-	os.MkdirAll("scripts",0755)
-	os.WriteFile("scripts/set_runtime.py",[]byte(""),0644)
-	os.WriteFile("scripts/taviq_prepare_commit_msg.py",[]byte(""),0644)
 	if err:=initRepo();err!=nil{t.Fatal(err)}
 	x,err:=diagnose();if err!=nil{t.Fatal(err)}
 	if !x["core_ready"].(bool){t.Fatal("expected core ready")}
