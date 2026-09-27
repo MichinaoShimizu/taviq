@@ -1,3 +1,5 @@
+> **Historical / experimental.** This document describes an earlier Collector/Analytics design and is not the current Taviq Basic architecture. Current Basic is zero-server and records minimal provenance through Git trailers and GitHub Actions. See [README](../README.md), [Basic](basic.md), and [Roadmap](ROADMAP.md).
+
 # Provenance Producer / Outbox
 
 The collector and network transport are separate.
