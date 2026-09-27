@@ -23,7 +23,7 @@ exec taviq hook prepare-commit-msg "$1"
 `
 
 type MachineState struct {
-	SchemaVersion int `json:"schema_version"`
+	SchemaVersion int  `json:"schema_version"`
 	Installed     bool `json:"installed"`
 }
 
