@@ -22,6 +22,45 @@ const hookScript = `#!/bin/sh
 exec taviq hook prepare-commit-msg "$1"
 `
 
+
+type MachineState struct {
+	SchemaVersion int `json:"schema_version"`
+	Installed     bool `json:"installed"`
+}
+
+func machineConfigDir() (string, error) {
+	base, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(base, "taviq"), nil
+}
+
+func machineInstall() error {
+	dir, err := machineConfigDir()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	state := MachineState{SchemaVersion: 1, Installed: true}
+	b, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, "state.json"), b, 0644)
+}
+
+func machineUninstall() error {
+	dir, err := machineConfigDir()
+	if err != nil {
+		return err
+	}
+	_ = os.Remove(filepath.Join(dir, "state.json"))
+	return os.Remove(dir)
+}
+
 func root() (string, error) {
 	b, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
 	if err != nil {
@@ -210,7 +249,7 @@ func fail(err error) {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage: taviq <init|deinit|doctor|observe|hook>")
+		fmt.Println("usage: taviq <install|uninstall|init|deinit|doctor|observe|hook>")
 		return
 	}
 	switch os.Args[1] {
