@@ -52,3 +52,5 @@ Re-run `taviq install` after moving the binary.
 ## Kiro
 
 Kiro supports user-level hooks in `~/.kiro/hooks/`, but the documented trigger names differ between Kiro pages and versions. Taviq does not install a Kiro hook until the contract is verified against a released Kiro version; the `taviq-kiro` and `taviq-kiro-crew` adapters remain available.
+
+Kiro hook payloads document only `hook_event_name`, `cwd`, `session_id` and prompt/tool/response fields: no model, agent name or subagent identity. The configured default model (`chat.defaultModel`, agent `model:`) is not the model actually used (fallback, resumed sessions and mid-session model changes differ), so Kiro observations record neither a model nor a `Taviq-Agents` entry.
