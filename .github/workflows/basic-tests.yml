@@ -23,6 +23,10 @@ jobs:
         run: python3 scripts/lint_contract.py
       - name: Python compile check
         run: python3 -m compileall -q scripts tests
+      - name: Go format check
+        run: |
+          files="$(gofmt -l cmd/taviq)"
+          test -z "$files" || { echo "gofmt required:"; echo "$files"; exit 1; }
       - name: Go spike tests
         run: go test ./cmd/taviq
       - name: Go spike benchmark
