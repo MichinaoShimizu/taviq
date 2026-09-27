@@ -23,11 +23,11 @@
 - [ ] session lifecycle実データ検証
 - [ ] raw event TTL / cleanup
 
-## Phase 2 — GitHub integration
+## Phase 2 — GitHub integration\n- [x] Basic mode: Skill → minimal commit trailer → GitHub Actions
 - [x] GitHub Check用summary生成
 - [x] PR changed-files入力からcoverage report JSON生成
 - [x] MVPはread-only GitHub Actions + Job Summary。Check Run書込は後続で決定
-- [ ] PRへTaviq AI Provenance Check Run投稿
+- [x] Basic modeをGitHub Actions Job Summaryへ表示\n- [ ] Check Runとして独立表示（任意の次段階）
 - [x] privacy-minimal provenance envelopeを定義\n- [x] replaceable envelope transport契約を定義\n- [x] short-lived GitHub Actions artifact workflowを追加\n- [x] Local producer outboxを実装\n- [x] Collectorとtransportを分離\n- [x] GitHub artifact direct-upload案を棄却（外部upload APIなし / workflow dispatchはActions writeが必要）\n- [x] Local/Self-hosted relay ingestion API MVP\n- [x] Self-hosted relay outbox transport MVP\n- [ ] TLS / org scoping / rate limit / durable DB\n- [ ] Taviq Cloud HTTPS transport\n- [ ] commit/session evidenceをPRへ集約
 - [ ] tool / mode / model / coverage表示
 - [ ] low coverage時にEvidenceが弱いと表示
