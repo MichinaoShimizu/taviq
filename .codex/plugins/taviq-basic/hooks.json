@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "python3 scripts/set_runtime.py --tool codex --mode agent --cwd \"$PWD\""
+      }
+    ]
+  }
+}
