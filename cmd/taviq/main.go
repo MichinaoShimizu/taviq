@@ -45,6 +45,32 @@ func hook(message string) error {
 
 
 
+
+func gitHead() string {
+	b,err:=exec.Command("git","rev-parse","HEAD").Output()
+	if err!=nil{return ""}
+	return strings.TrimSpace(string(b))
+}
+
+func observe(tool,mode,model string) error {
+	if tool!="claude"&&tool!="codex"&&tool!="kiro"{return fmt.Errorf("unsupported tool: %s",tool)}
+	r,err:=root();if err!=nil{return err}
+	dir:=filepath.Join(r,".taviq");if err:=os.MkdirAll(dir,0755);err!=nil{return err}
+	path:=filepath.Join(dir,"runtime.json")
+	current:=gitHead()
+	var x Runtime
+	if b,err:=os.ReadFile(path);err==nil{_ = json.Unmarshal(b,&x)}
+	if x.BaseHead!=current {
+		x=Runtime{SchemaVersion:1,BaseHead:current,Tools:[]string{},Modes:[]string{},Models:[]string{}}
+	}
+	x.SchemaVersion=1;x.BaseHead=current
+	x.Tools=uniq(append(x.Tools,tool))
+	if mode!=""{x.Modes=uniq(append(x.Modes,mode))}
+	if model!=""{x.Models=uniq(append(x.Models,model))}
+	b,_:=json.Marshal(x)
+	return os.WriteFile(path,b,0644)
+}
+
 const hookScript = `#!/bin/sh
 if command -v taviq >/dev/null 2>&1; then
   exec taviq hook prepare-commit-msg "$1"
