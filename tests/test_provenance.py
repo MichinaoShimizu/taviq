@@ -15,6 +15,21 @@ class ProvenanceTests(unittest.TestCase):
         safe=M.sanitize({"session_id":"s1","mystery":{"private":"x"},"cwd":"/tmp"})
         self.assertEqual(set(safe),{"session_id","cwd"})
 
+    def test_explicit_file_path_is_allowed_but_content_is_not(self):
+        safe=M.sanitize({"session_id":"s1","file_path":"src/app.py","content":"SECRET"})
+        self.assertEqual(safe["file_path"],"src/app.py")
+        self.assertNotIn("content",safe)
+
+    def test_session_aggregates_explicit_files(self):
+        with tempfile.TemporaryDirectory() as d:
+            home=Path(d)
+            base={"schema_version":1,"event":{"occurred_at":"2026-09-27T00:00:00+00:00"},"context":{"repository":"r","branch":"b","commit_sha":"abc"},"execution":{"session_id":"s1"}}
+            e1={**base,"change":{"observed_file":"a.py"}}
+            e2={**base,"change":{"observed_file":"b.py"}}
+            M.update_session(e1,home); state=M.update_session(e2,home)
+            self.assertEqual(state["observed_files"],["a.py","b.py"])
+            self.assertEqual(state["commit_sha"],"abc")
+
     def test_event_store_is_jsonl(self):
         with tempfile.TemporaryDirectory() as d:
             event={"schema_version":1,"event":{"id":"x"}}
