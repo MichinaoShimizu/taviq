@@ -187,13 +187,13 @@ The same principle applies to multiple modes and models.
 
 ## 4. Time/window semantics
 
-Basic currently accumulates observations in repository-local runtime state until a commit consumes them.
+Basic accumulates observations in repository-local runtime state within an explicit accumulation window. A supported AI session-start integration resets the window; observations within that window are accumulated.
 
-This is an implementation window, not a guaranteed task/session boundary.
+This is an implementation window, not a guaranteed task or commit boundary. Taviq does not clear runtime in `prepare-commit-msg`, because Git may still reject the commit after that hook and clearing would lose evidence.
 
 Therefore a tool appearing in a commit provenance record means:
 
-> Taviq observed that tool during the provenance accumulation window associated with the commit.
+> Taviq observed that tool during the current provenance accumulation window when the commit trailer was prepared.
 
 It does not prove that the tool changed every file in that commit.
 
