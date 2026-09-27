@@ -23,7 +23,7 @@
 - [ ] session lifecycle実データ検証
 - [ ] raw event TTL / cleanup
 
-## Basic MVP — Definition of Done\n- [x] Server不要\n- [x] repo-local Git hook installer\n- [x] tool / mode / modelの最小commit trailer\n- [x] Unknown時はtrailerを書かない\n- [x] trailer付与のidempotency\n- [x] PRでGitHub Actions Summary\n- [x] Prompt / code / usage / costをGitへ保存しない\n- [ ] Claude Codeでtool/mode/modelを自動設定\n- [ ] Codexでtool/mode/modelを自動設定\n- [ ] Kiroでtool/mode/modelを自動設定\n- [ ] 実PRでend-to-end dogfood\n\n## Phase 2 — GitHub integration\n- [x] Basic mode: Skill → minimal commit trailer → GitHub Actions
+## Basic MVP — Definition of Done\n- [x] Server不要\n- [x] repo-local Git hook installer\n- [x] tool / mode / modelの最小commit trailer\n- [x] Unknown時はtrailerを書かない\n- [x] trailer付与のidempotency\n- [x] PRでGitHub Actions Summary\n- [x] Prompt / code / usage / costをGitへ保存しない\n- [x] Claude Code workspace hookでtool/modeを自動設定\n- [ ] Claude modelを公式に取得できる場合のみ自動設定\n- [x] Codex workspace Skillでtool/modeを設定\n- [ ] Codex lifecycle hookでSkill依存をなくす\n- [ ] Codex modelを公式に取得できる場合のみ自動設定\n- [x] Kiro workspace hookでtool/modeを自動設定\n- [ ] Kiro modelを公式に取得できる場合のみ自動設定\n- [ ] 実PRでend-to-end dogfood\n\n## Phase 2 — GitHub integration\n- [x] Basic mode: Skill → minimal commit trailer → GitHub Actions
 - [x] GitHub Check用summary生成
 - [x] PR changed-files入力からcoverage report JSON生成
 - [x] MVPはread-only GitHub Actions + Job Summary。Check Run書込は後続で決定
