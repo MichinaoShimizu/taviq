@@ -1,24 +1,24 @@
 # TAVIQ
 
-**Engineering Intelligence**
+**Engineering Intelligence for Decisions**
 
-Delivery · Quality · AI · ROI
+デリバリー · 品質 · AI · ROI
 
-Taviq turns engineering delivery signals into decision-ready reports for engineering leaders and executives.
+Taviqは、開発組織のデータを「数値 → 何を意味するか → なぜ重要か → 次に何を判断するか」へ変換し、経営層と開発組織の意思決定を支援するプロダクトです。
 
-## Report hierarchy
+## レポートの考え方
 
-Taviq separates the report by decision level:
+Taviqは、読み手の意思決定レベルに応じてレポートを3層に分けます。
 
-1. **Executives** — investment, released capacity, delivery outcome, quality guardrails, business connection, and the decision/question requiring attention.
-2. **Engineering leaders / EMs** — delivery-system signals such as cycle time, review latency, AI ROI, and AI/non-AI observational comparisons.
-3. **Diagnostic detail** — repository-level PR throughput, size, cycle, and review metrics used to investigate why the upper-level signal moved.
+1. **経営層** — 投資、創出されたキャパシティ、デリバリー、品質、事業成果との接続、必要な経営判断。
+2. **開発組織長 / EM** — サイクルタイム、レビュー待ち、AI ROI、AI関与あり・なしの観測比較など。
+3. **診断詳細** — 上位指標が動いた理由を調べるための、リポジトリ別PR件数・サイズ・サイクル・レビュー指標。
 
-PR counts and review latency are diagnostic inputs; they are not presented as the primary executive outcome.
+PR件数やレビュー待ち時間は診断材料であり、経営成果そのものとしては扱いません。
 
-The intended value chain is:
+経営層向けの各指標は、次の4点を必ず示します：
 
-`Engineering investment → capacity → delivery → quality → business outcome`
+`数値 → 何を意味する？ → なぜ重要？ → 次の判断`
 
 AI reporting follows the same chain. Adoption, generated-code share, or token usage are not treated as business outcomes.
 
