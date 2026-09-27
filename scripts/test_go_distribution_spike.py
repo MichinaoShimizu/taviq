@@ -29,16 +29,22 @@ for goos, goarch in targets:
 linux = out / "taviq-linux-amd64"
 with tempfile.TemporaryDirectory() as td:
     repo = pathlib.Path(td) / "external-repo"
+    home = pathlib.Path(td) / "home"
+    config = pathlib.Path(td) / "config"
+    home.mkdir()
     subprocess.check_call(["git", "init", str(repo)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    # The external repository intentionally contains no Taviq source files.
-    (repo / ".taviq.yml").write_text("version: 1\n")
-    env_machine = dict(os.environ, XDG_CONFIG_HOME=str(pathlib.Path(td) / "config"), HOME=str(pathlib.Path(td) / "home"))\n    pathlib.Path(env_machine["HOME"]).mkdir()\n    subprocess.check_call([str(linux), "install"], cwd=repo, env=env_machine)\n    subprocess.check_call([str(linux), "init"], cwd=repo, env=env_machine)
+    env_machine = dict(os.environ, XDG_CONFIG_HOME=str(config), HOME=str(home))
+    subprocess.check_call([str(linux), "install"], cwd=repo, env=env_machine)
+    subprocess.check_call([str(linux), "init"], cwd=repo, env=env_machine)
+
+    assert (repo / ".taviq.yml").read_text() == "version: 1\n"
+    assert not (repo / ".taviq" / "hooks" / "prepare-commit-msg").exists()
 
     msg = repo / "message"
     msg.write_text("External checkout test\n")
-    env = dict(os.environ, TAVIQ_TOOL="claude", TAVIQ_MODE="agent")
-    env.update({"XDG_CONFIG_HOME": env_machine["XDG_CONFIG_HOME"], "HOME": env_machine["HOME"]})\n    subprocess.check_call([str(linux), "hook", "prepare-commit-msg", str(msg)], cwd=repo, env=env)
+    env_hook = dict(env_machine, TAVIQ_TOOL="claude", TAVIQ_MODE="agent")
+    subprocess.check_call([str(linux), "hook", "prepare-commit-msg", str(msg)], cwd=repo, env=env_hook)
     text = msg.read_text()
     assert "Taviq-Provenance: v1" in text
     assert "Taviq-Tools: claude" in text
@@ -46,7 +52,8 @@ with tempfile.TemporaryDirectory() as td:
     doctor = subprocess.run([str(linux), "doctor"], cwd=repo, env=env_machine, text=True, capture_output=True)
     assert doctor.returncode == 0, doctor.stderr + doctor.stdout
 
-    subprocess.check_call([str(linux), "deinit"], cwd=repo, env=env_machine)\n    subprocess.check_call([str(linux), "uninstall"], cwd=repo, env=env_machine)
+    subprocess.check_call([str(linux), "deinit"], cwd=repo, env=env_machine)
+    subprocess.check_call([str(linux), "uninstall"], cwd=repo, env=env_machine)
 
 shutil.rmtree(out)
 print(json.dumps({"targets": results, "binary_only_external_repo": "passed"}, indent=2))
