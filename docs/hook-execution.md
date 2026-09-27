@@ -39,3 +39,15 @@ v0.1 keeps the repository-local runner as the default.
 A machine-installed runner must be introduced as an explicit capability and dogfooded before repository-local execution is removed.
 
 Repository configuration should contain only enablement/policy state, not a duplicated implementation.
+
+
+## Transitional runner selection
+
+Repository initialization may install a compatibility hook that selects execution in this order:
+
+1. If `taviq` is available on `PATH`, run `taviq hook prepare-commit-msg`.
+2. Otherwise use the repository-local v0.1 writer.
+
+This allows machine/organization-managed installations to be dogfooded without breaking repositories that still depend on the v0.1 local implementation.
+
+The fallback can be removed only after global distribution is independently proven reliable.
