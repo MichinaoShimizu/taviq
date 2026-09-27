@@ -40,9 +40,9 @@ minimal runtime metadata
         ▼
 Git commit
   Taviq-Provenance: v1
-  Taviq-Tool: claude
-  Taviq-Mode: agent
-  Taviq-Model: <optional>
+  Taviq-Tools: claude,codex
+  Taviq-Modes: agent
+  Taviq-Models: <optional>
         │
         ▼
 GitHub Actions
@@ -80,7 +80,7 @@ Provenanceは「AI関与の証拠」であり、「AIが価値を生んだ証拠
 - AI tool / mode / model（取得できる場合）
 - commit / PRとのcorrelation
 - provenance coverage
-- confirmed / unknown
+- recorded / unknown
 - privacy-consciousな記録
 
 **KPI Playbook — 証拠を読む**
@@ -134,9 +134,9 @@ Gitに残すのは低機密な最小metadataだけです。
 
 ```text
 Taviq-Provenance: v1
-Taviq-Tool: claude
-Taviq-Mode: agent
-Taviq-Model: <optional>
+Taviq-Tools: claude,codex
+Taviq-Modes: agent
+Taviq-Models: <optional>
 ```
 
 デフォルトでは以下をGitへ残しません。
@@ -171,15 +171,7 @@ Taviq Provenance + Cost         → 投資分析の入力
 
 これらの組み合わせから因果を自動的に断定しません。
 
-## 設計ドキュメント
-
-- [Basic setup](docs/basic.md)\n- [Provenance Schema & Semantics](docs/provenance-schema.md)
-- [Provenance Trust Model](docs/verified-provenance.md)
-- [Data Capability Model](docs/data-capability-model.md)
-- [Deployment Modes](docs/deployment-modes.md)
-- [Implementation Roadmap](docs/ROADMAP.md)
-
-## 現在の方針
+## 設計ドキュメント\n\n- [Basic setup](docs/basic.md)\n- [Provenance Schema & Semantics](docs/provenance-schema.md)\n- [Provenance Trust Model](docs/verified-provenance.md)\n- [Implementation Roadmap](docs/ROADMAP.md)\n\n## 現在の方針
 
 Taviqは当面、**AI Engineering Provenance Layer** に集中します。
 
