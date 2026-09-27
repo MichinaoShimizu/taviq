@@ -33,7 +33,7 @@
 - [ ] low coverage時にEvidenceが弱いと表示
 - [x] GitHub書込権限をLocal Collectorから分離
 
-## Phase 3 — Tool adapters
+## Advanced — Frozen until Basic v0.1 is complete\n\nDo not add Advanced Collector/Relay/Economics features until all unchecked items in Basic MVP Definition of Done are complete.\n\n## Phase 3 — Tool adapters
 ### Claude
 - [ ] 公式hook eventごとのフィールド検証
 - [ ] model/version
