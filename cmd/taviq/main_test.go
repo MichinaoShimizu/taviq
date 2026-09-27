@@ -35,3 +35,30 @@ func TestHookMultiValueSorted(t *testing.T) {
 		if !strings.Contains(s,want){t.Fatalf("missing %s in %s",want,s)}
 	}
 }
+
+
+func TestInitDeinitRestoresHooksPath(t *testing.T) {
+	dir:=t.TempDir()
+	if err:=exec.Command("git","init",dir).Run();err!=nil{t.Fatal(err)}
+	old,_:=os.Getwd();defer os.Chdir(old);os.Chdir(dir)
+	if err:=exec.Command("git","config","core.hooksPath",".original").Run();err!=nil{t.Fatal(err)}
+	if err:=initRepo();err!=nil{t.Fatal(err)}
+	if err:=initRepo();err!=nil{t.Fatal(err)}
+	if err:=deinitRepo();err!=nil{t.Fatal(err)}
+	b,err:=exec.Command("git","config","--get","core.hooksPath").Output();if err!=nil{t.Fatal(err)}
+	if strings.TrimSpace(string(b))!=".original"{t.Fatalf("hooksPath not restored: %s",b)}
+}
+
+func TestDoctorCoreDoesNotRequireGitHubActions(t *testing.T) {
+	dir:=t.TempDir()
+	if err:=exec.Command("git","init",dir).Run();err!=nil{t.Fatal(err)}
+	old,_:=os.Getwd();defer os.Chdir(old);os.Chdir(dir)
+	os.MkdirAll("scripts",0755)
+	os.WriteFile("scripts/set_runtime.py",[]byte(""),0644)
+	os.WriteFile("scripts/taviq_prepare_commit_msg.py",[]byte(""),0644)
+	if err:=initRepo();err!=nil{t.Fatal(err)}
+	x,err:=diagnose();if err!=nil{t.Fatal(err)}
+	if !x["core_ready"].(bool){t.Fatal("expected core ready")}
+	checks:=x["checks"].(map[string]bool)
+	if checks["github_pr_summary"]{t.Fatal("GitHub Actions must remain optional")}
+}
