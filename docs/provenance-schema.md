@@ -196,11 +196,7 @@ Runtime stores `base_head` together with observed tools/modes/models.
 - If a commit attempt fails, `HEAD` does not change, so the evidence is retained.
 - Switching Claude → Codex → Kiro without a commit does not reset the window.
 
-Runtime can also be explicitly cleared with:
-
-```bash
-python3 scripts/set_runtime.py --clear
-```
+Runtime can also be explicitly cleared by deleting `<git-dir>/taviq/runtime.json`.
 
 This is still an implementation boundary, not proof that every observed tool contributed to every file or line in the resulting commit.
 

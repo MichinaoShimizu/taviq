@@ -32,9 +32,13 @@ with tempfile.TemporaryDirectory() as td:
     home = pathlib.Path(td) / "home"
     config = pathlib.Path(td) / "config"
     home.mkdir()
+    (home / ".claude").mkdir()
+    (home / ".codex").mkdir()
     subprocess.check_call(["git", "init", str(repo)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     env_machine = dict(os.environ, XDG_CONFIG_HOME=str(config), HOME=str(home))
+    env_machine.pop("CLAUDE_CONFIG_DIR", None)
+    env_machine.pop("CODEX_HOME", None)
     subprocess.check_call([str(linux), "install"], cwd=repo, env=env_machine)
     subprocess.check_call([str(linux), "init"], cwd=repo, env=env_machine)
 
@@ -49,11 +53,33 @@ with tempfile.TemporaryDirectory() as td:
     assert "Taviq-Provenance: v1" in text
     assert "Taviq-Tools: claude" in text
 
+    claude_settings = json.loads((home / ".claude" / "settings.json").read_text())
+    assert "hook claude-code" in json.dumps(claude_settings["hooks"]["PreToolUse"])
+    claude_msg = repo / "claude-message"
+    claude_msg.write_text("Claude hook test\n")
+    event = json.dumps({"cwd": str(repo), "hook_event_name": "PreToolUse", "tool_name": "Write"})
+    claude_hook = subprocess.run([str(linux), "hook", "claude-code"], cwd=home, env=env_machine, input=event, text=True, capture_output=True)
+    assert claude_hook.returncode == 0 and claude_hook.stdout == "" and claude_hook.stderr == "", claude_hook
+    subprocess.check_call([str(linux), "hook", "prepare-commit-msg", str(claude_msg)], cwd=repo, env=env_machine)
+    assert "Taviq-Tools: claude" in claude_msg.read_text()
+
+    codex_hooks = json.loads((home / ".codex" / "hooks.json").read_text())
+    assert "hook codex" in json.dumps(codex_hooks["hooks"]["PreToolUse"])
+    codex_msg = repo / "codex-message"
+    codex_msg.write_text("Codex hook test\n")
+    event = json.dumps({"cwd": str(repo), "hook_event_name": "PreToolUse", "tool_name": "Bash", "model": "gpt-test"})
+    codex_hook = subprocess.run([str(linux), "hook", "codex"], cwd=home, env=env_machine, input=event, text=True, capture_output=True)
+    assert codex_hook.returncode == 0 and codex_hook.stdout == "" and codex_hook.stderr == "", codex_hook
+    subprocess.check_call([str(linux), "hook", "prepare-commit-msg", str(codex_msg)], cwd=repo, env=env_machine)
+    assert "Taviq-Tools: claude,codex" in codex_msg.read_text() and "Taviq-Models: gpt-test" in codex_msg.read_text()
+
     doctor = subprocess.run([str(linux), "doctor"], cwd=repo, env=env_machine, text=True, capture_output=True)
     assert doctor.returncode == 0, doctor.stderr + doctor.stdout
 
     subprocess.check_call([str(linux), "deinit"], cwd=repo, env=env_machine)
     subprocess.check_call([str(linux), "uninstall"], cwd=repo, env=env_machine)
+    assert json.loads((home / ".claude" / "settings.json").read_text()) == {}
+    assert json.loads((home / ".codex" / "hooks.json").read_text()) == {}
 
 shutil.rmtree(out)
 print(json.dumps({"targets": results, "binary_only_external_repo": "passed"}, indent=2))
